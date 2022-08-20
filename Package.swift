@@ -9,6 +9,8 @@ let package = Package(
     .library(name: "App", targets: ["App"]),
     .library(name: "AppFeature", targets: ["AppFeature"]),
     .library(name: "Defaults", targets: ["Defaults"]),
+    .library(name: "MenuBarSettingsManager", targets: ["MenuBarSettingsManager"]),
+    .library(name: "MenuBarState", targets: ["MenuBarState"]),
   ],
   dependencies: [
     .package(
@@ -22,17 +24,29 @@ let package = Package(
       dependencies: [
         "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "MenuBarSettingsManager",
       ]
     ),
     .target(
       name: "AppFeature",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "Defaults",
+        "MenuBarSettingsManager",
       ]
     ),
     .target(
       name: "Defaults",
+      dependencies: []
+    ),
+    .target(
+      name: "MenuBarSettingsManager",
+      dependencies: [
+        "Defaults",
+        "MenuBarState",
+      ]
+    ),
+    .target(
+      name: "MenuBarState",
       dependencies: []
     ),
   ]
