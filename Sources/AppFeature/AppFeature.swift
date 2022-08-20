@@ -60,10 +60,12 @@ public let appReducer: Reducer<AppState, AppAction, Void> = Reducer { state, act
     }
   case .quitButtonPressed: return Effect.fireAndForget { NSApplication.shared.terminate(nil) }
   case .fullScreenMenuBarVisibilityChangedFromOutside:
+    state.appMenuBarState = MenuBarSettingsManager.getAppMenuBarState()
     state.systemMenuBarState = MenuBarSettingsManager.getSystemMenuBarState()
 
     return .none
   case .menuBarHidingChangedFromOutside:
+    state.appMenuBarState = MenuBarSettingsManager.getAppMenuBarState()
     state.systemMenuBarState = MenuBarSettingsManager.getSystemMenuBarState()
 
     return .none
