@@ -8,6 +8,7 @@ let package = Package(
   products: [
     .library(name: "App", targets: ["App"]),
     .library(name: "AppFeature", targets: ["AppFeature"]),
+    .library(name: "Defaults", targets: ["Defaults"]),
   ],
   dependencies: [
     .package(
@@ -27,7 +28,12 @@ let package = Package(
       name: "AppFeature",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "Defaults",
       ]
+    ),
+    .target(
+      name: "Defaults",
+      dependencies: []
     ),
   ]
 )
