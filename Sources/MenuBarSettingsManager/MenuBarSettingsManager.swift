@@ -1,5 +1,5 @@
-import Defaults
 import AppKit
+import Defaults
 import MenuBarState
 
 extension Defaults.Keys {
@@ -8,45 +8,66 @@ extension Defaults.Keys {
 }
 
 public struct MenuBarSettingsManager {
-  static let systemBundleIdentifier = "-g"
+  public var getAppMenuBarState: () -> MenuBarState
+  public var setAppMenuBarState: (MenuBarState) -> Void
+  public var getSystemMenuBarState: () -> MenuBarState
+  public var setSystemMenuBarState: (MenuBarState) -> Void
+}
 
-  private static func getMenuBarState(for bundleIdentifier: String) -> MenuBarState {
-    let menuBarVisibleInFullScreen = Defaults[.menuBarVisibleInFullScreenKey, bundleIdentifier]
-    let hideMenuBarOnDesktop = Defaults[.hideMenuBarOnDesktopKey, bundleIdentifier]
+extension MenuBarSettingsManager {
+  public static var live: Self {
+    let systemBundleIdentifier = "-g"
+
+    func getBundleIdentifierOfCurrentApp() -> String? {
+      NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+    }
+
+    func getMenuBarState(for bundleIdentifier: String) -> MenuBarState {
+      let menuBarVisibleInFullScreen = Defaults[.menuBarVisibleInFullScreenKey, bundleIdentifier]
+      let hideMenuBarOnDesktop = Defaults[.hideMenuBarOnDesktopKey, bundleIdentifier]
+
+      return .init(
+        menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
+        hideMenuBarOnDesktop: hideMenuBarOnDesktop
+      )
+    }
+
+    func setMenuBarState(state: MenuBarState, for bundleIdentifier: String) {
+      let rawState = state.rawValue
+      Defaults[.menuBarVisibleInFullScreenKey, bundleIdentifier] =
+        rawState.menuBarVisibleInFullScreen
+      Defaults[.hideMenuBarOnDesktopKey, bundleIdentifier] = rawState.hideMenuBarOnDesktop
+    }
 
     return .init(
-      menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
-      hideMenuBarOnDesktop: hideMenuBarOnDesktop
+      getAppMenuBarState: {
+        guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return .default }
+
+        return getMenuBarState(for: bundleIdentifier)
+      },
+      setAppMenuBarState: { state in
+        guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return }
+
+        setMenuBarState(state: state, for: bundleIdentifier)
+      },
+      getSystemMenuBarState: { getMenuBarState(for: systemBundleIdentifier) },
+      setSystemMenuBarState: { state in setMenuBarState(state: state, for: systemBundleIdentifier) }
     )
-  }
-
-  private static func setMenuBarState(state: MenuBarState, for bundleIdentifier: String) {
-    let rawState = state.rawValue
-    Defaults[.menuBarVisibleInFullScreenKey, bundleIdentifier] = rawState.menuBarVisibleInFullScreen
-    Defaults[.hideMenuBarOnDesktopKey, bundleIdentifier] = rawState.hideMenuBarOnDesktop
-  }
-
-  public static func getAppMenuBarState() -> MenuBarState {
-    guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return .default }
-
-    return getMenuBarState(for: bundleIdentifier)
-  }
-
-  public static func setAppMenuBarState(state: MenuBarState) {
-    guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return }
-
-    setMenuBarState(state: state, for: bundleIdentifier)
-  }
-
-  public static func getSystemMenuBarState() -> MenuBarState {
-    return getMenuBarState(for: systemBundleIdentifier)
-  }
-
-  public static func setSystemMenuBarState(state: MenuBarState) {
-    setMenuBarState(state: state, for: systemBundleIdentifier)
   }
 }
 
-func getBundleIdentifierOfCurrentApp() -> String? {
-  NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+extension MenuBarSettingsManager {
+  public static var mock: Self {
+    .init(
+      getAppMenuBarState: {
+        .always
+
+      },
+      setAppMenuBarState: { _ in },
+      getSystemMenuBarState: {
+        .onDesktopOnly
+      },
+      setSystemMenuBarState: { _ in }
+    )
+  }
 }

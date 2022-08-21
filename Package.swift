@@ -8,9 +8,11 @@ let package = Package(
   products: [
     .library(name: "App", targets: ["App"]),
     .library(name: "AppFeature", targets: ["AppFeature"]),
+    .library(name: "DefaultDistributedNotificationCenter", targets: ["DefaultDistributedNotificationCenter"]),
     .library(name: "Defaults", targets: ["Defaults"]),
     .library(name: "MenuBarSettingsManager", targets: ["MenuBarSettingsManager"]),
     .library(name: "MenuBarState", targets: ["MenuBarState"]),
+    .library(name: "SharedNSWorkspaceNotificationCenter", targets: ["SharedNSWorkspaceNotificationCenter"]),
   ],
   dependencies: [
     .package(
@@ -24,15 +26,23 @@ let package = Package(
       dependencies: [
         "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "DefaultDistributedNotificationCenter",
         "MenuBarSettingsManager",
+        "SharedNSWorkspaceNotificationCenter",
       ]
     ),
     .target(
       name: "AppFeature",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "DefaultDistributedNotificationCenter",
         "MenuBarSettingsManager",
+        "SharedNSWorkspaceNotificationCenter",
       ]
+    ),
+    .target(
+      name: "DefaultDistributedNotificationCenter",
+      dependencies: []
     ),
     .target(
       name: "Defaults",
@@ -47,6 +57,10 @@ let package = Package(
     ),
     .target(
       name: "MenuBarState",
+      dependencies: []
+    ),
+    .target(
+      name: "SharedNSWorkspaceNotificationCenter",
       dependencies: []
     ),
   ]

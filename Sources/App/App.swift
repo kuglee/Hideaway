@@ -1,6 +1,8 @@
 import AppFeature
 import ComposableArchitecture
+import DefaultDistributedNotificationCenter
 import MenuBarSettingsManager
+import SharedNSWorkspaceNotificationCenter
 import SwiftUI
 
 public struct App: SwiftUI.App {
@@ -10,12 +12,13 @@ public struct App: SwiftUI.App {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
       AppView(
         store: Store(
-          initialState: AppState(
-            appMenuBarState: MenuBarSettingsManager.getAppMenuBarState(),
-            systemMenuBarState: MenuBarSettingsManager.getSystemMenuBarState()
-          ),
+          initialState: AppState(),
           reducer: appReducer,
-          environment: ()
+          environment: .init(
+            menuBarSettingsManager: MenuBarSettingsManager.live,
+            distributedNotificationCenter: DefaultDistributedNotificationCenter.live,
+            workspaceNotificationCenter: SharedNSWorkspaceNotificationCenter.live
+          )
         )
       )
     }

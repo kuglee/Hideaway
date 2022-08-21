@@ -1,13 +1,18 @@
 import ComposableArchitecture
+import DefaultDistributedNotificationCenter
 import MenuBarSettingsManager
 import MenuBarState
+import SharedNSWorkspaceNotificationCenter
 import SwiftUI
 
 public struct AppState: Equatable {
   public var appMenuBarState: MenuBarState
   public var systemMenuBarState: MenuBarState
 
-  public init(appMenuBarState: MenuBarState, systemMenuBarState: MenuBarState) {
+  public init(
+    appMenuBarState: MenuBarState = .default,
+    systemMenuBarState: MenuBarState = .inFullScreenOnly
+  ) {
     self.appMenuBarState = appMenuBarState
     self.systemMenuBarState = systemMenuBarState
   }
@@ -20,59 +25,96 @@ public enum AppAction {
   case fullScreenMenuBarVisibilityChangedFromOutside
   case menuBarHidingChangedFromOutside
   case didActivateApplication
+  case viewAppeared
 }
 
-public let appReducer: Reducer<AppState, AppAction, Void> = Reducer { state, action, _ in
+public struct AppEnvironment {
+  public var menuBarSettingsManager: MenuBarSettingsManager
+  public var distributedNotificationCenter: DefaultDistributedNotificationCenter
+  public var workspaceNotificationCenter: SharedNSWorkspaceNotificationCenter
+
+  public init(
+    menuBarSettingsManager: MenuBarSettingsManager,
+    distributedNotificationCenter: DefaultDistributedNotificationCenter,
+    workspaceNotificationCenter: SharedNSWorkspaceNotificationCenter
+  ) {
+    self.menuBarSettingsManager = menuBarSettingsManager
+    self.distributedNotificationCenter = distributedNotificationCenter
+    self.workspaceNotificationCenter = workspaceNotificationCenter
+  }
+}
+
+public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
+  state,
+  action,
+  environment in
   switch action {
   case .appMenuBarStateSelected(let menuBarState):
     state.appMenuBarState = menuBarState
 
     return .fireAndForget {
-      MenuBarSettingsManager.setAppMenuBarState(state: menuBarState)
-
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceMenuBarHidingChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
+      environment.menuBarSettingsManager.setAppMenuBarState(menuBarState)
+      environment.distributedNotificationCenter.post(
+        .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
+        Bundle.main.bundleIdentifier
+      )
+      environment.distributedNotificationCenter.post(
+        .AppleInterfaceMenuBarHidingChangedNotification,
+        Bundle.main.bundleIdentifier
+      )
     }
   case .systemMenuBarStateSelected(let menuBarState):
     state.systemMenuBarState = menuBarState
 
     return .fireAndForget {
-      MenuBarSettingsManager.setSystemMenuBarState(state: menuBarState)
-
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceMenuBarHidingChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
+      environment.menuBarSettingsManager.setSystemMenuBarState(menuBarState)
+      environment.distributedNotificationCenter.post(
+        .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
+        Bundle.main.bundleIdentifier
+      )
+      environment.distributedNotificationCenter.post(
+        .AppleInterfaceMenuBarHidingChangedNotification,
+        Bundle.main.bundleIdentifier
+      )
     }
   case .quitButtonPressed: return Effect.fireAndForget { NSApplication.shared.terminate(nil) }
   case .fullScreenMenuBarVisibilityChangedFromOutside:
-    state.appMenuBarState = MenuBarSettingsManager.getAppMenuBarState()
-    state.systemMenuBarState = MenuBarSettingsManager.getSystemMenuBarState()
+    state.appMenuBarState = environment.menuBarSettingsManager.getAppMenuBarState()
+    state.systemMenuBarState = environment.menuBarSettingsManager.getSystemMenuBarState()
 
     return .none
   case .menuBarHidingChangedFromOutside:
-    state.appMenuBarState = MenuBarSettingsManager.getAppMenuBarState()
-    state.systemMenuBarState = MenuBarSettingsManager.getSystemMenuBarState()
+    state.appMenuBarState = environment.menuBarSettingsManager.getAppMenuBarState()
+    state.systemMenuBarState = environment.menuBarSettingsManager.getSystemMenuBarState()
 
     return .none
   case .didActivateApplication:
-    state.appMenuBarState = MenuBarSettingsManager.getAppMenuBarState()
+    state.appMenuBarState = environment.menuBarSettingsManager.getAppMenuBarState()
 
     return .none
+  case .viewAppeared:
+    state.appMenuBarState = environment.menuBarSettingsManager.getAppMenuBarState()
+    state.systemMenuBarState = environment.menuBarSettingsManager.getSystemMenuBarState()
+
+    return .run { send in
+      environment.distributedNotificationCenter.observe(
+        .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification
+      ) { notification in
+        if (notification.object as? String?) != Bundle.main.bundleIdentifier {
+          Task { await send(.fullScreenMenuBarVisibilityChangedFromOutside) }
+        }
+      }
+      environment.distributedNotificationCenter.observe(
+        .AppleInterfaceMenuBarHidingChangedNotification
+      ) { notification in
+        if (notification.object as? String?) != Bundle.main.bundleIdentifier {
+          Task { await send(.menuBarHidingChangedFromOutside) }
+        }
+      }
+      environment.workspaceNotificationCenter.observe(
+        NSWorkspace.didActivateApplicationNotification
+      ) { _ in Task { await send(.didActivateApplication) } }
+    }
   }
 }
 
@@ -106,34 +148,7 @@ public struct AppView: View {
         }
         Button("Quit Hideaway") { viewStore.send(.quitButtonPressed) }
       }
-      .pickerStyle(.inline)
-      .onAppear {
-        DistributedNotificationCenter.default()
-          .addObserver(
-            forName: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
-            object: nil,
-            queue: nil
-          ) { notification in
-            if (notification.object as? String?) != Bundle.main.bundleIdentifier {
-              viewStore.send(.fullScreenMenuBarVisibilityChangedFromOutside)
-            }
-          }
-        DistributedNotificationCenter.default()
-          .addObserver(
-            forName: .AppleInterfaceMenuBarHidingChangedNotification,
-            object: nil,
-            queue: nil
-          ) { notification in
-            if (notification.object as? String?) != Bundle.main.bundleIdentifier {
-              viewStore.send(.menuBarHidingChangedFromOutside)
-            }
-          }
-        NSWorkspace.shared.notificationCenter.addObserver(
-          forName: NSWorkspace.didActivateApplicationNotification,
-          object: nil,
-          queue: nil
-        ) { _ in viewStore.send(.didActivateApplication) }
-      }
+      .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }
     }
   }
 }
