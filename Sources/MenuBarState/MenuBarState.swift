@@ -18,14 +18,12 @@ public enum MenuBarState: CaseIterable {
 
 extension MenuBarState: RawRepresentable {
   public init(rawValue: (menuBarVisibleInFullScreen: Bool?, hideMenuBarOnDesktop: Bool?)) {
-    guard let menuBarVisibleInFullScreen = rawValue.menuBarVisibleInFullScreen,
-      let hideMenuBarOnDesktop = rawValue.hideMenuBarOnDesktop
-    else {
+    guard rawValue.menuBarVisibleInFullScreen != nil || rawValue.hideMenuBarOnDesktop != nil else {
       self = .default
       return
     }
 
-    switch (menuBarVisibleInFullScreen, hideMenuBarOnDesktop) {
+    switch (rawValue.menuBarVisibleInFullScreen ?? false, rawValue.hideMenuBarOnDesktop ?? false) {
     case (false, false): self = .inFullScreenOnly
     case (false, true): self = .always
     case (true, false): self = .never

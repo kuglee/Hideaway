@@ -8,17 +8,12 @@ let package = Package(
   products: [
     .library(name: "App", targets: ["App"]),
     .library(name: "AppFeature", targets: ["AppFeature"]),
-    .library(name: "DefaultDistributedNotificationCenter", targets: ["DefaultDistributedNotificationCenter"]),
     .library(name: "Defaults", targets: ["Defaults"]),
     .library(name: "MenuBarSettingsManager", targets: ["MenuBarSettingsManager"]),
     .library(name: "MenuBarState", targets: ["MenuBarState"]),
-    .library(name: "SharedNSWorkspaceNotificationCenter", targets: ["SharedNSWorkspaceNotificationCenter"]),
   ],
   dependencies: [
-    .package(
-      url: "https://github.com/pointfreeco/swift-composable-architecture",
-      from: "0.39.0"
-    ),
+    .package( url: "https://github.com/pointfreeco/swift-composable-architecture", from: "0.39.0" ),
   ],
   targets: [
     .target(
@@ -26,23 +21,15 @@ let package = Package(
       dependencies: [
         "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "DefaultDistributedNotificationCenter",
         "MenuBarSettingsManager",
-        "SharedNSWorkspaceNotificationCenter",
       ]
     ),
     .target(
       name: "AppFeature",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "DefaultDistributedNotificationCenter",
         "MenuBarSettingsManager",
-        "SharedNSWorkspaceNotificationCenter",
       ]
-    ),
-    .target(
-      name: "DefaultDistributedNotificationCenter",
-      dependencies: []
     ),
     .target(
       name: "Defaults",
@@ -51,6 +38,7 @@ let package = Package(
     .target(
       name: "MenuBarSettingsManager",
       dependencies: [
+        .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "Defaults",
         "MenuBarState",
       ]
@@ -59,9 +47,13 @@ let package = Package(
       name: "MenuBarState",
       dependencies: []
     ),
-    .target(
-      name: "SharedNSWorkspaceNotificationCenter",
-      dependencies: []
+    .testTarget(
+      name: "AppFeatureTests",
+      dependencies: [
+        "AppFeature",
+        "MenuBarSettingsManager",
+        "MenuBarState",
+      ]
     ),
   ]
 )
