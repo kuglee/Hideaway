@@ -23,8 +23,7 @@ public enum AppAction: Equatable {
   case gotAppMenuBarState(TaskResult<MenuBarState>)
   case didSetAppMenuBarState(TaskResult<Unit>)
   case systemMenuBarStateSelected(state: MenuBarState)
-  case gotSystemMenuBarState(TaskResult<MenuBarState>)
-  case didSetSystemMenuBarState(TaskResult<Unit>)
+  case gotSystemMenuBarState(MenuBarState)
   case quitButtonPressed
   case fullScreenMenuBarVisibilityChangedNotification
   case menuBarHidingChangedNotification
@@ -157,15 +156,7 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
     state.systemMenuBarState = menuBarState
 
     return .run { [state] send in
-      await send(
-        .didSetSystemMenuBarState(
-          TaskResult {
-            try await environment.menuBarSettingsManager.setSystemMenuBarState(
-              state.systemMenuBarState
-            )
-          }
-        )
-      )
+      await environment.menuBarSettingsManager.setSystemMenuBarState(state.systemMenuBarState)
 
       await withTaskGroup(of: Void.self) { group in
         if state.systemMenuBarState.rawValue.menuBarVisibleInFullScreen
@@ -194,9 +185,7 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
         }
         group.addTask {
           await send(
-            .gotSystemMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getSystemMenuBarState() }
-            )
+            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
           )
         }
       }
@@ -213,9 +202,7 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
         }
         group.addTask {
           await send(
-            .gotSystemMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getSystemMenuBarState() }
-            )
+            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
           )
         }
       }
@@ -229,15 +216,10 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
   case .didSetAppMenuBarState(.success(_)): return .none
   case let .didSetAppMenuBarState(.failure(error)):
     return .run { _ in await environment.log(error.localizedDescription) }
-  case let .gotSystemMenuBarState(.success(menuBarState)):
+  case let .gotSystemMenuBarState(menuBarState):
     state.systemMenuBarState = menuBarState
 
     return .none
-  case let .gotSystemMenuBarState(.failure(error)):
-    return .run { _ in await environment.log(error.localizedDescription) }
-  case .didSetSystemMenuBarState(.success(_)): return .none
-  case let .didSetSystemMenuBarState(.failure(error)):
-    return .run { _ in await environment.log(error.localizedDescription) }
   case .didActivateApplication:
     return .task {
       await .gotAppMenuBarState(
@@ -256,9 +238,7 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
         }
         group.addTask {
           await send(
-            .gotSystemMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getSystemMenuBarState() }
-            )
+            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
           )
         }
       }

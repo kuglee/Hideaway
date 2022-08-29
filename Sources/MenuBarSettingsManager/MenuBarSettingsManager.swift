@@ -27,65 +27,39 @@ extension Defaults.Keys {
 public struct MenuBarSettingsManager {
   public var getAppMenuBarState: () async throws -> MenuBarState
   public var setAppMenuBarState: (MenuBarState) async throws -> Unit
-  public var getSystemMenuBarState: () async throws -> MenuBarState
-  public var setSystemMenuBarState: (MenuBarState) async throws -> Unit
+  public var getSystemMenuBarState: () async -> MenuBarState
+  public var setSystemMenuBarState: (MenuBarState) async -> Void
 }
 
 extension MenuBarSettingsManager {
   public static var live: Self {
-    let systemBundleIdentifier = "-g"
-
     func getBundleIdentifierOfCurrentApp() -> String? {
       NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-    }
-
-    func getMenuBarState(for bundleIdentifier: String) throws -> MenuBarState {
-      do {
-        let menuBarVisibleInFullScreen = try Defaults.get(
-          key: .menuBarVisibleInFullScreenKey,
-          bundleIdentifier: bundleIdentifier
-        )
-        let hideMenuBarOnDesktop = try Defaults.get(
-          key: .hideMenuBarOnDesktopKey,
-          bundleIdentifier: bundleIdentifier
-        )
-
-        return .init(
-          menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
-          hideMenuBarOnDesktop: hideMenuBarOnDesktop
-        )
-      } catch {
-        throw MenuBarSettingsManagerError.getError(
-          message: "Unable to get menu bar state of \"\(bundleIdentifier)\""
-        )
-      }
-    }
-
-    func setMenuBarState(state: MenuBarState, for bundleIdentifier: String) throws {
-      do {
-        let rawState = state.rawValue
-        try Defaults.set(
-          key: .menuBarVisibleInFullScreenKey,
-          value: rawState.menuBarVisibleInFullScreen,
-          bundleIdentifier: bundleIdentifier
-        )
-        try Defaults.set(
-          key: .hideMenuBarOnDesktopKey,
-          value: rawState.hideMenuBarOnDesktop,
-          bundleIdentifier: bundleIdentifier
-        )
-      } catch {
-        throw MenuBarSettingsManagerError.setError(
-          message: "Unable to set menu bar state \"\(state.label)\" of \"\(bundleIdentifier)\""
-        )
-      }
     }
 
     return .init(
       getAppMenuBarState: {
         guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return .default }
 
-        do { return try getMenuBarState(for: bundleIdentifier) } catch { throw error }
+        do {
+          let menuBarVisibleInFullScreen = try Defaults.get(
+            key: .menuBarVisibleInFullScreenKey,
+            bundleIdentifier: bundleIdentifier
+          )
+          let hideMenuBarOnDesktop = try Defaults.get(
+            key: .hideMenuBarOnDesktopKey,
+            bundleIdentifier: bundleIdentifier
+          )
+
+          return .init(
+            menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
+            hideMenuBarOnDesktop: hideMenuBarOnDesktop
+          )
+        } catch {
+          throw MenuBarSettingsManagerError.getError(
+            message: "Unable to get menu bar state of \"\(bundleIdentifier)\""
+          )
+        }
       },
       setAppMenuBarState: { state in
         guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else {
@@ -94,17 +68,41 @@ extension MenuBarSettingsManager {
           )
         }
 
-        do { try setMenuBarState(state: state, for: bundleIdentifier) } catch { throw error }
+        do {
+          let rawState = state.rawValue
+          try Defaults.set(
+            key: .menuBarVisibleInFullScreenKey,
+            value: rawState.menuBarVisibleInFullScreen,
+            bundleIdentifier: bundleIdentifier
+          )
+          try Defaults.set(
+            key: .hideMenuBarOnDesktopKey,
+            value: rawState.hideMenuBarOnDesktop,
+            bundleIdentifier: bundleIdentifier
+          )
+        } catch {
+          throw MenuBarSettingsManagerError.setError(
+            message: "Unable to set menu bar state \"\(state.label)\" of \"\(bundleIdentifier)\""
+          )
+        }
 
         return unit
       },
       getSystemMenuBarState: {
-        do { return try getMenuBarState(for: systemBundleIdentifier) } catch { throw error }
+        let menuBarVisibleInFullScreen = Defaults.get(key: .menuBarVisibleInFullScreenKey)
+        let hideMenuBarOnDesktop = Defaults.get(key: .hideMenuBarOnDesktopKey)
+
+        return .init(
+          menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
+          hideMenuBarOnDesktop: hideMenuBarOnDesktop
+        )
       },
       setSystemMenuBarState: { state in
-        do { try setMenuBarState(state: state, for: systemBundleIdentifier) } catch { throw error }
-
-        return unit
+        Defaults.set(
+          key: .menuBarVisibleInFullScreenKey,
+          value: state.rawValue.menuBarVisibleInFullScreen!
+        )
+        Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop!)
       }
     )
   }

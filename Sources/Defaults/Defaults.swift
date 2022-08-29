@@ -70,6 +70,10 @@ public struct Defaults {
     do { return try self.read(key: key, bundleIdentifier: bundleIdentifier) } catch { throw error }
   }
 
+  public static func get(key: Defaults.Keys) -> Bool {
+    CFPreferencesGetAppBooleanValue(key.rawValue as CFString, kCFPreferencesAnyHost, nil)
+  }
+
   public static func set(key: Defaults.Keys, value: Bool?, bundleIdentifier: String) throws {
     do {
       if let value {
@@ -78,6 +82,16 @@ public struct Defaults {
         try Defaults.delete(key: key, bundleIdentifier: bundleIdentifier)
       }
     } catch { throw error }
+  }
+
+  public static func set(key: Defaults.Keys, value: Bool) {
+    CFPreferencesSetValue(
+      key.rawValue as CFString,
+      value.toCFBoolean(),
+      kCFPreferencesAnyApplication,
+      kCFPreferencesCurrentUser,
+      kCFPreferencesAnyHost
+    )
   }
 }
 
@@ -88,6 +102,10 @@ extension Defaults {
     public init(_ rawValue: String) { self.rawValue = rawValue }
     public init(rawValue: String) { self.rawValue = rawValue }
   }
+}
+
+extension Bool {
+  func toCFBoolean() -> CFBoolean { return self ? kCFBooleanTrue : kCFBooleanFalse }
 }
 
 enum CommandError: Error, LocalizedError {
