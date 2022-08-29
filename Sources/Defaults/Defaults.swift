@@ -6,11 +6,11 @@ enum DefaultsError: Error, LocalizedError {
   case writeError(message: String)
   case deleteError(message: String)
 
-  var localizedDescription: String {
+  var errorDescription: String {
     switch self {
-    case let .readError(error): return error
-    case let .writeError(error): return error
-    case let .deleteError(error): return error
+    case let .readError(message): return message
+    case let .writeError(message): return message
+    case let .deleteError(message): return message
     }
   }
 }
@@ -20,7 +20,7 @@ enum DefaultsError: Error, LocalizedError {
 public struct Defaults {
   private static let defaultsExecutable = URL(filePath: "/usr/bin/defaults")
 
-  private static func read(key: Defaults.Keys, bundleIdentifier: String) throws -> Bool {
+  private static func read(key: Defaults.Keys, bundleIdentifier: String) throws -> Bool? {
     do {
       let output = try run(
         command: defaultsExecutable,
@@ -29,9 +29,15 @@ public struct Defaults {
 
       return output == "1\n" ? true : false
     } catch {
-      throw DefaultsError.readError(
-        message: "Unable to read the value for key \"\(key)\" of \"\(bundleIdentifier)\""
-      )
+      if !error.localizedDescription.contains(
+        "\(bundleIdentifier), \(key.rawValue)) does not exist"
+      ) {
+        throw DefaultsError.readError(
+          message: "Unable to read the value for key \"\(key.rawValue)\" of \"\(bundleIdentifier)\""
+        )
+      }
+
+      return nil
     }
   }
 
@@ -52,16 +58,16 @@ public struct Defaults {
     do {
       _ = try run(command: defaultsExecutable, with: ["delete", bundleIdentifier, key.rawValue])
     } catch {
-      throw DefaultsError.deleteError(
-        message: "Unable to delete key \"\(key)\" of \"\(bundleIdentifier)\""
-      )
+      if !error.localizedDescription.contains("\(bundleIdentifier)) not found.") {
+        throw DefaultsError.deleteError(
+          message: "Unable to delete key \"\(key)\" of \"\(bundleIdentifier)\""
+        )
+      }
     }
   }
 
   public static func get(key: Defaults.Keys, bundleIdentifier: String) throws -> Bool? {
-    do { return try self.read(key: key, bundleIdentifier: bundleIdentifier) } catch {
-      throw error
-    }
+    do { return try self.read(key: key, bundleIdentifier: bundleIdentifier) } catch { throw error }
   }
 
   public static func set(key: Defaults.Keys, value: Bool?, bundleIdentifier: String) throws {
@@ -71,9 +77,7 @@ public struct Defaults {
       } else {
         try Defaults.delete(key: key, bundleIdentifier: bundleIdentifier)
       }
-    } catch {
-      throw error
-    }
+    } catch { throw error }
   }
 }
 
@@ -90,9 +94,9 @@ enum CommandError: Error, LocalizedError {
   case runError(message: String)
   case commandError(command: String, errorMessage: String?, exitStatus: Int)
 
-  var localizedDescription: String {
+  var errorDescription: String? {
     switch self {
-    case .runError(let error): return error
+    case .runError(let message): return message
     case .commandError(let command, let errorMessage, let exitStatus):
       var description = "Error: \(command) failed with exit status \(exitStatus)."
 

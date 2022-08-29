@@ -5,16 +5,16 @@ import MenuBarState
 public struct Unit: Equatable {}
 public let unit = Unit()
 
-public enum MenuBarSettingsManagerError: Error, LocalizedError, Equatable {
+public enum MenuBarSettingsManagerError: Error, LocalizedError {
   case getError(message: String)
   case setError(message: String)
   case appError(message: String)
 
-  var localizedDescription: String {
+  public var errorDescription: String? {
     switch self {
-    case let .getError(error): return error
-    case let .setError(error): return error
-    case let .appError(error): return error
+    case let .getError(message): return message
+    case let .setError(message): return message
+    case let .appError(message): return message
     }
   }
 }
