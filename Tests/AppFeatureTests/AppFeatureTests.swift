@@ -81,6 +81,7 @@ import XCTest
   }
 
   func testAppMenuBarStateSelectedWithOnlyFullScreenMenuBarVisibilityChange() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
 
     let store = TestStore(
@@ -91,7 +92,11 @@ import XCTest
       environment: .unimplemented
     )
 
-    store.environment.menuBarSettingsManager.setAppMenuBarState = { _ in unit }
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
+    store.environment.menuBarSettingsManager.setAppMenuBarState = { _, _ in unit }
     store.environment.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
@@ -106,10 +111,12 @@ import XCTest
 
     await task.finish()
 
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testAppMenuBarStateSelectedWithOnlyMenuBarHidingChange() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
 
     let store = TestStore(
@@ -120,7 +127,11 @@ import XCTest
       environment: .unimplemented
     )
 
-    store.environment.menuBarSettingsManager.setAppMenuBarState = { _ in unit }
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
+    store.environment.menuBarSettingsManager.setAppMenuBarState = { _, _ in unit }
     store.environment.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
@@ -135,10 +146,12 @@ import XCTest
 
     await task.finish()
 
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testAppMenuBarStateSelectedWithFullScreenMenuBarVisibilityAndMenuBarHidingChange() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
 
@@ -150,7 +163,11 @@ import XCTest
       environment: .unimplemented
     )
 
-    store.environment.menuBarSettingsManager.setAppMenuBarState = { _ in unit }
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
+    store.environment.menuBarSettingsManager.setAppMenuBarState = { _, _ in unit }
     store.environment.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
@@ -168,6 +185,7 @@ import XCTest
 
     await task.finish()
 
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
   }
@@ -313,6 +331,7 @@ import XCTest
   }
 
   func testFullScreenMenuBarVisibilityChangedFromOutside() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let (fullScreenMenuBarVisibilityChanged, changeFullScreenMenuBarVisibility) = AsyncStream<
       Notification
     >
@@ -324,6 +343,10 @@ import XCTest
       environment: .unimplemented
     )
 
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
     store.environment.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
         fullScreenMenuBarVisibilityChanged.compactMap {
@@ -333,7 +356,7 @@ import XCTest
     }
     store.environment.menuBarHidingChanged = { AsyncStream.never }
     store.environment.didActivateApplication = { AsyncStream.never }
-    store.environment.menuBarSettingsManager.getAppMenuBarState = { .never }
+    store.environment.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.environment.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
     let notification = Notification(name: .init(""))
@@ -347,6 +370,8 @@ import XCTest
     await store.receive(.gotSystemMenuBarState(.never)) { $0.systemMenuBarState = .never }
 
     await task.cancel()
+
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
     changeFullScreenMenuBarVisibility.yield(notification)
   }
@@ -386,6 +411,8 @@ import XCTest
   }
 
   func testMenuBarHidingChangedFromOutside() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
+
     let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Notification>
       .streamWithContinuation()
 
@@ -395,6 +422,10 @@ import XCTest
       environment: .unimplemented
     )
 
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
     store.environment.menuBarHidingChanged = {
       AsyncStream(
         menuBarHidingChanged.compactMap {
@@ -404,7 +435,7 @@ import XCTest
     }
     store.environment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.environment.didActivateApplication = { AsyncStream.never }
-    store.environment.menuBarSettingsManager.getAppMenuBarState = { .never }
+    store.environment.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.environment.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
     let notification = Notification(name: .init(""))
@@ -419,10 +450,14 @@ import XCTest
 
     await task.cancel()
 
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
+
     changeMenuBarHiding.yield(notification)
   }
 
   func testDidActivateApplication() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
+
     let (didActivateApplication, activateApplication) = AsyncStream<Notification>
       .streamWithContinuation()
 
@@ -432,8 +467,12 @@ import XCTest
       environment: .unimplemented
     )
 
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
     store.environment.didActivateApplication = { AsyncStream(didActivateApplication.map { _ in }) }
-    store.environment.menuBarSettingsManager.getAppMenuBarState = { .never }
+    store.environment.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.environment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.environment.menuBarHidingChanged = { AsyncStream.never }
 
@@ -450,6 +489,8 @@ import XCTest
     await store.receive(.gotAppMenuBarState(.success(.never))) { $0.appMenuBarState = .never }
 
     await task.cancel()
+
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
     activateApplication.yield(notification)
   }
@@ -472,13 +513,19 @@ import XCTest
   }
 
   func testViewAppeared() async {
+    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
+
     let store = TestStore(
       initialState: AppState(),
       reducer: appReducer,
       environment: .unimplemented
     )
 
-    store.environment.menuBarSettingsManager.getAppMenuBarState = { .never }
+    store.environment.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
+      await didGetBundleIdentifierOfCurrentApp.setValue(true)
+      return nil
+    }
+    store.environment.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.environment.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
     let task = await store.send(.viewAppeared)
@@ -487,6 +534,8 @@ import XCTest
     await store.receive(.gotSystemMenuBarState(.never)) { $0.systemMenuBarState = .never }
 
     await task.finish()
+
+    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
   }
 
   func testTask() async {

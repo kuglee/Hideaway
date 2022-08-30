@@ -25,21 +25,18 @@ extension Defaults.Keys {
 }
 
 public struct MenuBarSettingsManager {
-  public var getAppMenuBarState: () async throws -> MenuBarState
-  public var setAppMenuBarState: (MenuBarState) async throws -> Unit
+  public var getAppMenuBarState: (String?) async throws -> MenuBarState
+  public var setAppMenuBarState: (MenuBarState, String?) async throws -> Unit
   public var getSystemMenuBarState: () async -> MenuBarState
   public var setSystemMenuBarState: (MenuBarState) async -> Void
+  public var getBundleIdentifierOfCurrentApp: () async -> String?
 }
 
 extension MenuBarSettingsManager {
   public static var live: Self {
-    func getBundleIdentifierOfCurrentApp() -> String? {
-      NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-    }
-
     return .init(
-      getAppMenuBarState: {
-        guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else { return .default }
+      getAppMenuBarState: { bundleIdentifier in
+        guard let bundleIdentifier = bundleIdentifier else { return .default }
 
         do {
           let menuBarVisibleInFullScreen = try Defaults.get(
@@ -61,8 +58,8 @@ extension MenuBarSettingsManager {
           )
         }
       },
-      setAppMenuBarState: { state in
-        guard let bundleIdentifier = getBundleIdentifierOfCurrentApp() else {
+      setAppMenuBarState: { state, bundleIdentifier in
+        guard let bundleIdentifier = bundleIdentifier else {
           throw MenuBarSettingsManagerError.appError(
             message: "Unable to get the bundle identifier of current app"
           )
@@ -103,7 +100,8 @@ extension MenuBarSettingsManager {
           value: state.rawValue.menuBarVisibleInFullScreen!
         )
         Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop!)
-      }
+      },
+      getBundleIdentifierOfCurrentApp: { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
     )
   }
 }
@@ -122,7 +120,8 @@ extension MenuBarSettingsManager {
         "\(Self.self).getSystemMenuBarState",
         placeholder: .default
       ),
-      setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState")
+      setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState"),
+      getBundleIdentifierOfCurrentApp: XCTUnimplemented("\(Self.self).getBundleIdentifierOfCurrentApp")
     )
   }
 #endif

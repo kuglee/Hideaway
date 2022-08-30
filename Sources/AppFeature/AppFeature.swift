@@ -128,10 +128,16 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
     state.appMenuBarState = menuBarState
 
     return .run { [state] send in
+      let bundleIdentifier = await environment.menuBarSettingsManager
+        .getBundleIdentifierOfCurrentApp()
+
       await send(
         .didSetAppMenuBarState(
           TaskResult {
-            try await environment.menuBarSettingsManager.setAppMenuBarState(state.appMenuBarState)
+            try await environment.menuBarSettingsManager.setAppMenuBarState(
+              state.appMenuBarState,
+              bundleIdentifier
+            )
           }
         )
       )
@@ -171,9 +177,14 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
   case .quitButtonPressed: return .run { _ in await environment.terminate() }
   case .fullScreenMenuBarVisibilityChangedNotification:
     return .run { send in
+      let bundleIdentifier = await environment.menuBarSettingsManager
+        .getBundleIdentifierOfCurrentApp()
+
       await send(
         .gotAppMenuBarState(
-          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+          TaskResult {
+            try await environment.menuBarSettingsManager.getAppMenuBarState(bundleIdentifier)
+          }
         )
       )
       await send(
@@ -182,9 +193,14 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
     }
   case .menuBarHidingChangedNotification:
     return .run { send in
+      let bundleIdentifier = await environment.menuBarSettingsManager
+        .getBundleIdentifierOfCurrentApp()
+
       await send(
         .gotAppMenuBarState(
-          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+          TaskResult {
+            try await environment.menuBarSettingsManager.getAppMenuBarState(bundleIdentifier)
+          }
         )
       )
       await send(
@@ -207,14 +223,24 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
   case .didActivateApplication:
     return .task {
       await .gotAppMenuBarState(
-        TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+        TaskResult {
+          let bundleIdentifier = await environment.menuBarSettingsManager
+            .getBundleIdentifierOfCurrentApp()
+
+          return try await environment.menuBarSettingsManager.getAppMenuBarState(bundleIdentifier)
+        }
       )
     }
   case .viewAppeared:
     return .run { send in
+      let bundleIdentifier = await environment.menuBarSettingsManager
+        .getBundleIdentifierOfCurrentApp()
+
       await send(
         .gotAppMenuBarState(
-          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+          TaskResult {
+            try await environment.menuBarSettingsManager.getAppMenuBarState(bundleIdentifier)
+          }
         )
       )
       await send(
