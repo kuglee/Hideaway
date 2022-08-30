@@ -13,7 +13,10 @@ let package = Package(
     .library(name: "MenuBarState", targets: ["MenuBarState"]),
   ],
   dependencies: [
-    .package( url: "https://github.com/pointfreeco/swift-composable-architecture", from: "0.39.0" ),
+    .package(
+      url: "https://github.com/pointfreeco/swift-composable-architecture",
+      branch: "protocol-beta"
+    ),
   ],
   targets: [
     .target(
