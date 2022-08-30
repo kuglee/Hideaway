@@ -136,18 +136,16 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
         )
       )
 
-      await withTaskGroup(of: Void.self) { group in
-        if state.appMenuBarState.rawValue.menuBarVisibleInFullScreen
-          != oldAppMenuBarState.rawValue.menuBarVisibleInFullScreen
-        {
-          group.addTask { await environment.postFullScreenMenuBarVisibilityChanged() }
-        }
+      if state.appMenuBarState.rawValue.menuBarVisibleInFullScreen
+        != oldAppMenuBarState.rawValue.menuBarVisibleInFullScreen
+      {
+        await environment.postFullScreenMenuBarVisibilityChanged()
+      }
 
-        if state.appMenuBarState.rawValue.hideMenuBarOnDesktop
-          != oldAppMenuBarState.rawValue.hideMenuBarOnDesktop
-        {
-          group.addTask { await environment.postMenuBarHidingChanged() }
-        }
+      if state.appMenuBarState.rawValue.hideMenuBarOnDesktop
+        != oldAppMenuBarState.rawValue.hideMenuBarOnDesktop
+      {
+        await environment.postMenuBarHidingChanged()
       }
     }
   case let .systemMenuBarStateSelected(menuBarState):
@@ -158,54 +156,40 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
     return .run { [state] send in
       await environment.menuBarSettingsManager.setSystemMenuBarState(state.systemMenuBarState)
 
-      await withTaskGroup(of: Void.self) { group in
-        if state.systemMenuBarState.rawValue.menuBarVisibleInFullScreen
-          != oldSystemMenuBarState.rawValue.menuBarVisibleInFullScreen
-        {
-          group.addTask { await environment.postFullScreenMenuBarVisibilityChanged() }
-        }
+      if state.systemMenuBarState.rawValue.menuBarVisibleInFullScreen
+        != oldSystemMenuBarState.rawValue.menuBarVisibleInFullScreen
+      {
+        await environment.postFullScreenMenuBarVisibilityChanged()
+      }
 
-        if state.systemMenuBarState.rawValue.hideMenuBarOnDesktop
-          != oldSystemMenuBarState.rawValue.hideMenuBarOnDesktop
-        {
-          group.addTask { await environment.postMenuBarHidingChanged() }
-        }
+      if state.systemMenuBarState.rawValue.hideMenuBarOnDesktop
+        != oldSystemMenuBarState.rawValue.hideMenuBarOnDesktop
+      {
+        await environment.postMenuBarHidingChanged()
       }
     }
   case .quitButtonPressed: return .run { _ in await environment.terminate() }
   case .fullScreenMenuBarVisibilityChangedNotification:
     return .run { send in
-      await withTaskGroup(of: Void.self) { group in
-        group.addTask {
-          await send(
-            .gotAppMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
-            )
-          )
-        }
-        group.addTask {
-          await send(
-            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
-          )
-        }
-      }
+      await send(
+        .gotAppMenuBarState(
+          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+        )
+      )
+      await send(
+        .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
+      )
     }
   case .menuBarHidingChangedNotification:
     return .run { send in
-      await withTaskGroup(of: Void.self) { group in
-        group.addTask {
-          await send(
-            .gotAppMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
-            )
-          )
-        }
-        group.addTask {
-          await send(
-            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
-          )
-        }
-      }
+      await send(
+        .gotAppMenuBarState(
+          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+        )
+      )
+      await send(
+        .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
+      )
     }
   case let .gotAppMenuBarState(.success(menuBarState)):
     state.appMenuBarState = menuBarState
@@ -228,20 +212,14 @@ public let appReducer: Reducer<AppState, AppAction, AppEnvironment> = Reducer {
     }
   case .viewAppeared:
     return .run { send in
-      await withTaskGroup(of: Void.self) { group in
-        group.addTask {
-          await send(
-            .gotAppMenuBarState(
-              TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
-            )
-          )
-        }
-        group.addTask {
-          await send(
-            .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
-          )
-        }
-      }
+      await send(
+        .gotAppMenuBarState(
+          TaskResult { try await environment.menuBarSettingsManager.getAppMenuBarState() }
+        )
+      )
+      await send(
+        .gotSystemMenuBarState(await environment.menuBarSettingsManager.getSystemMenuBarState())
+      )
     }
   case .task:
     return .run { send in
