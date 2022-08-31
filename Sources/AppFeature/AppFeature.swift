@@ -2,7 +2,6 @@ import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
 import SwiftUI
-import XCTestDynamicOverlay
 import os.log
 
 import struct MenuBarSettingsManager.Unit
