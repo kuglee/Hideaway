@@ -25,8 +25,8 @@ extension Defaults.Keys {
 }
 
 public struct MenuBarSettingsManager {
-  public var getAppMenuBarState: (String?) async throws -> MenuBarState
-  public var setAppMenuBarState: (MenuBarState, String?) async throws -> Unit
+  public var getAppMenuBarState: (String?) async throws -> MenuBarState?
+  public var setAppMenuBarState: (MenuBarState?, String?) async throws -> Unit
   public var getSystemMenuBarState: () async -> MenuBarState
   public var setSystemMenuBarState: (MenuBarState) async -> Void
   public var getBundleIdentifierOfCurrentApp: () async -> String?
@@ -35,8 +35,7 @@ public struct MenuBarSettingsManager {
 extension MenuBarSettingsManager {
   public static var live: Self {
     return .init(
-      getAppMenuBarState: { bundleIdentifier in
-        guard let bundleIdentifier = bundleIdentifier else { return .default }
+      getAppMenuBarState: { bundleIdentifier in guard let bundleIdentifier else { return nil }
 
         do {
           let menuBarVisibleInFullScreen = try Defaults.get(
@@ -48,9 +47,11 @@ extension MenuBarSettingsManager {
             bundleIdentifier: bundleIdentifier
           )
 
+          guard menuBarVisibleInFullScreen != nil || hideMenuBarOnDesktop != nil else { return nil }
+
           return .init(
-            menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
-            hideMenuBarOnDesktop: hideMenuBarOnDesktop
+            menuBarVisibleInFullScreen: menuBarVisibleInFullScreen ?? false,
+            hideMenuBarOnDesktop: hideMenuBarOnDesktop ?? false
           )
         } catch {
           throw MenuBarSettingsManagerError.getError(
@@ -66,20 +67,20 @@ extension MenuBarSettingsManager {
         }
 
         do {
-          let rawState = state.rawValue
           try Defaults.set(
             key: .menuBarVisibleInFullScreenKey,
-            value: rawState.menuBarVisibleInFullScreen,
+            value: state?.rawValue.menuBarVisibleInFullScreen ?? nil,
             bundleIdentifier: bundleIdentifier
           )
           try Defaults.set(
             key: .hideMenuBarOnDesktopKey,
-            value: rawState.hideMenuBarOnDesktop,
+            value: state?.rawValue.hideMenuBarOnDesktop ?? nil,
             bundleIdentifier: bundleIdentifier
           )
         } catch {
           throw MenuBarSettingsManagerError.setError(
-            message: "Unable to set menu bar state \"\(state.label)\" of \"\(bundleIdentifier)\""
+            message:
+              "Unable to set menu bar state \"\(state?.label ?? "System default")\" of \"\(bundleIdentifier)\""
           )
         }
 
@@ -97,9 +98,9 @@ extension MenuBarSettingsManager {
       setSystemMenuBarState: { state in
         Defaults.set(
           key: .menuBarVisibleInFullScreenKey,
-          value: state.rawValue.menuBarVisibleInFullScreen!
+          value: state.rawValue.menuBarVisibleInFullScreen
         )
-        Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop!)
+        Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop)
       },
       getBundleIdentifierOfCurrentApp: { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
     )
@@ -111,17 +112,16 @@ extension MenuBarSettingsManager {
 
   extension MenuBarSettingsManager {
     public static let unimplemented = Self(
-      getAppMenuBarState: XCTUnimplemented(
-        "\(Self.self).getAppMenuBarState",
-        placeholder: .default
-      ),
+      getAppMenuBarState: XCTUnimplemented("\(Self.self).getAppMenuBarState", placeholder: nil),
       setAppMenuBarState: XCTUnimplemented("\(Self.self).setAppMenuBarState"),
       getSystemMenuBarState: XCTUnimplemented(
         "\(Self.self).getSystemMenuBarState",
-        placeholder: .default
+        placeholder: .inFullScreenOnly
       ),
       setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState"),
-      getBundleIdentifierOfCurrentApp: XCTUnimplemented("\(Self.self).getBundleIdentifierOfCurrentApp")
+      getBundleIdentifierOfCurrentApp: XCTUnimplemented(
+        "\(Self.self).getBundleIdentifierOfCurrentApp"
+      )
     )
   }
 #endif

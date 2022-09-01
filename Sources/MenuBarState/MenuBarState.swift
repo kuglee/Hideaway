@@ -3,7 +3,6 @@ public enum MenuBarState: CaseIterable {
   case onDesktopOnly
   case inFullScreenOnly
   case never
-  case `default`
 
   public var label: String {
     switch self {
@@ -11,19 +10,13 @@ public enum MenuBarState: CaseIterable {
     case .onDesktopOnly: return "On desktop only"
     case .inFullScreenOnly: return "In full screen only"
     case .never: return "Never"
-    case .default: return "System default"
     }
   }
 }
 
 extension MenuBarState: RawRepresentable {
-  public init(rawValue: (menuBarVisibleInFullScreen: Bool?, hideMenuBarOnDesktop: Bool?)) {
-    guard rawValue.menuBarVisibleInFullScreen != nil || rawValue.hideMenuBarOnDesktop != nil else {
-      self = .default
-      return
-    }
-
-    switch (rawValue.menuBarVisibleInFullScreen ?? false, rawValue.hideMenuBarOnDesktop ?? false) {
+  public init(rawValue: (menuBarVisibleInFullScreen: Bool, hideMenuBarOnDesktop: Bool)) {
+    switch (rawValue.menuBarVisibleInFullScreen, rawValue.hideMenuBarOnDesktop) {
     case (false, false): self = .inFullScreenOnly
     case (false, true): self = .always
     case (true, false): self = .never
@@ -31,7 +24,7 @@ extension MenuBarState: RawRepresentable {
     }
   }
 
-  public init(menuBarVisibleInFullScreen: Bool?, hideMenuBarOnDesktop: Bool?) {
+  public init(menuBarVisibleInFullScreen: Bool, hideMenuBarOnDesktop: Bool) {
     self.init(
       rawValue: (
         menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
@@ -40,13 +33,12 @@ extension MenuBarState: RawRepresentable {
     )
   }
 
-  public var rawValue: (menuBarVisibleInFullScreen: Bool?, hideMenuBarOnDesktop: Bool?) {
+  public var rawValue: (menuBarVisibleInFullScreen: Bool, hideMenuBarOnDesktop: Bool) {
     switch self {
     case .inFullScreenOnly: return (menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
     case .always: return (menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: true)
     case .never: return (menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: false)
     case .onDesktopOnly: return (menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: true)
-    case .default: return (menuBarVisibleInFullScreen: nil, hideMenuBarOnDesktop: nil)
     }
   }
 }
