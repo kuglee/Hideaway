@@ -2,9 +2,6 @@ import AppKit
 import Defaults
 import MenuBarState
 
-public struct Unit: Equatable {}
-public let unit = Unit()
-
 public enum MenuBarSettingsManagerError: Error, LocalizedError {
   case getError(message: String)
   case setError(message: String)
@@ -24,12 +21,16 @@ extension Defaults.Keys {
   public static let hideMenuBarOnDesktopKey: Self = .init("_HIHideMenuBar")
 }
 
+public let appStatesKey = "AppStates"
+
 public struct MenuBarSettingsManager {
   public var getAppMenuBarState: (String?) async throws -> MenuBarState?
-  public var setAppMenuBarState: (MenuBarState?, String?) async throws -> Unit
+  public var setAppMenuBarState: (MenuBarState?, String?) async throws -> Void
   public var getSystemMenuBarState: () async -> MenuBarState
   public var setSystemMenuBarState: (MenuBarState) async -> Void
   public var getBundleIdentifierOfCurrentApp: () async -> String?
+  public var getAppMenuBarStates: () async -> [String: [String: Bool]]?
+  public var setAppMenuBarStates: ([String: [String: Bool]]) async -> Void
 }
 
 extension MenuBarSettingsManager {
@@ -83,8 +84,6 @@ extension MenuBarSettingsManager {
               "Unable to set menu bar state \"\(state?.label ?? "System default")\" of \"\(bundleIdentifier)\""
           )
         }
-
-        return unit
       },
       getSystemMenuBarState: {
         let menuBarVisibleInFullScreen = Defaults.get(key: .menuBarVisibleInFullScreenKey)
@@ -102,7 +101,15 @@ extension MenuBarSettingsManager {
         )
         Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop)
       },
-      getBundleIdentifierOfCurrentApp: { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
+      getBundleIdentifierOfCurrentApp: {
+        NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+      },
+      getAppMenuBarStates: {
+        UserDefaults.standard.dictionary(forKey: appStatesKey) as? [String: [String: Bool]]
+      },
+      setAppMenuBarStates: { appStates in
+        UserDefaults.standard.setValue(appStates, forKey: appStatesKey)
+      }
     )
   }
 }
@@ -121,7 +128,9 @@ extension MenuBarSettingsManager {
       setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState"),
       getBundleIdentifierOfCurrentApp: XCTUnimplemented(
         "\(Self.self).getBundleIdentifierOfCurrentApp"
-      )
+      ),
+      getAppMenuBarStates: XCTUnimplemented("\(Self.self).getAppMenuBarStates", placeholder: nil),
+      setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates")
     )
   }
 #endif

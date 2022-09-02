@@ -4,7 +4,10 @@ import MenuBarState
 import SwiftUI
 import os.log
 
-import struct MenuBarSettingsManager.Unit
+public struct AppMenuBarSaveState: Equatable {
+  public let bundleIdentifier: String
+  public let state: MenuBarState?
+}
 
 public struct AppFeature: ReducerProtocol {
   @Dependency(\.appEnvironment) var environment
@@ -28,7 +31,7 @@ public struct AppFeature: ReducerProtocol {
   public enum Action: Equatable {
     case appMenuBarStateSelected(state: MenuBarState?)
     case gotAppMenuBarState(TaskResult<MenuBarState?>)
-    case didSetAppMenuBarState(TaskResult<Unit>)
+    case didSetAppMenuBarState(TaskResult<AppMenuBarSaveState>)
     case systemMenuBarStateSelected(state: MenuBarState)
     case gotSystemMenuBarState(MenuBarState)
     case quitButtonPressed
@@ -48,7 +51,10 @@ public struct AppFeature: ReducerProtocol {
         state.appMenuBarState = menuBarState
 
         return .run { [state] send in
-          let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+          guard
+            let bundleIdentifier = await self.menuBarSettingsManager
+              .getBundleIdentifierOfCurrentApp()
+          else { return }
 
           await send(
             .didSetAppMenuBarState(
@@ -56,6 +62,11 @@ public struct AppFeature: ReducerProtocol {
                 try await self.menuBarSettingsManager.setAppMenuBarState(
                   state.appMenuBarState,
                   bundleIdentifier
+                )
+
+                return AppMenuBarSaveState(
+                  bundleIdentifier: bundleIdentifier,
+                  state: state.appMenuBarState
                 )
               }
             )
@@ -93,7 +104,19 @@ public struct AppFeature: ReducerProtocol {
             await self.environment.postMenuBarHidingChanged()
           }
         }
-      case .quitButtonPressed: return .run { _ in await self.environment.terminate() }
+      case .quitButtonPressed:
+        return .run { _ in
+          if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
+            for key in appStates.keys {
+              try await self.menuBarSettingsManager.setAppMenuBarState(nil, key)
+            }
+
+            await self.environment.postFullScreenMenuBarVisibilityChanged()
+            await self.environment.postMenuBarHidingChanged()
+          }
+
+          await self.environment.terminate()
+        }
       case .fullScreenMenuBarVisibilityChangedNotification:
         return .run { send in
           let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
@@ -130,7 +153,22 @@ public struct AppFeature: ReducerProtocol {
         return .none
       case let .gotAppMenuBarState(.failure(error)):
         return .run { _ in await self.environment.log(error.localizedDescription) }
-      case .didSetAppMenuBarState(.success(_)): return .none
+      case let .didSetAppMenuBarState(.success(appMenuBarSaveState)):
+        return .run { _ in
+          if let menuBarState = appMenuBarSaveState.state {
+            var appStates: [String: [String: Bool]] =
+              await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
+
+            appStates[appMenuBarSaveState.bundleIdentifier] = menuBarState.dictValue
+
+            await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
+          } else {
+            if var appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
+              appStates.removeValue(forKey: appMenuBarSaveState.bundleIdentifier)
+              await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
+            }
+          }
+        }
       case let .didSetAppMenuBarState(.failure(error)):
         return .run { _ in await self.environment.log(error.localizedDescription) }
       case let .gotSystemMenuBarState(menuBarState):
@@ -150,6 +188,18 @@ public struct AppFeature: ReducerProtocol {
         }
       case .viewAppeared:
         return .run { send in
+          if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
+            for (key, value) in appStates {
+              try await self.menuBarSettingsManager.setAppMenuBarState(
+                MenuBarState(dictionary: value),
+                key
+              )
+            }
+
+            await self.environment.postFullScreenMenuBarVisibilityChanged()
+            await self.environment.postMenuBarHidingChanged()
+          }
+
           let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
 
           await send(
@@ -286,7 +336,6 @@ extension AppFeatureEnvironment {
       ),
       log: XCTUnimplemented("\(Self.self).log"),
       terminate: XCTUnimplemented("\(Self.self).terminate")
-
     )
   }
 #endif

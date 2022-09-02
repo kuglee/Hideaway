@@ -33,6 +33,22 @@ extension MenuBarState: RawRepresentable {
     )
   }
 
+  public init?(dictionary: [String: Any]) {
+    let menuBarVisibleInFullScreen = dictionary["AppleMenuBarVisibleInFullscreen"] as? Bool
+    let hideMenuBarOnDesktop = dictionary["_HIHideMenuBar"] as? Bool
+
+    guard let menuBarVisibleInFullScreen, let hideMenuBarOnDesktop else {
+      return nil
+    }
+
+    self.init(
+      rawValue: (
+        menuBarVisibleInFullScreen: menuBarVisibleInFullScreen,
+        hideMenuBarOnDesktop: hideMenuBarOnDesktop
+      )
+    )
+  }
+
   public var rawValue: (menuBarVisibleInFullScreen: Bool, hideMenuBarOnDesktop: Bool) {
     switch self {
     case .inFullScreenOnly: return (menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
@@ -40,5 +56,12 @@ extension MenuBarState: RawRepresentable {
     case .never: return (menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: false)
     case .onDesktopOnly: return (menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: true)
     }
+  }
+
+  public var dictValue: [String: Bool] {
+    [
+      "AppleMenuBarVisibleInFullscreen": self.rawValue.menuBarVisibleInFullScreen,
+      "_HIHideMenuBar": self.rawValue.hideMenuBarOnDesktop,
+    ]
   }
 }
