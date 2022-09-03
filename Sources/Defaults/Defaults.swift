@@ -104,9 +104,7 @@ extension Defaults {
   }
 }
 
-extension Bool {
-  func toCFBoolean() -> CFBoolean { return self ? kCFBooleanTrue : kCFBooleanFalse }
-}
+extension Bool { func toCFBoolean() -> CFBoolean { self ? kCFBooleanTrue : kCFBooleanFalse } }
 
 enum CommandError: Error, LocalizedError {
   case runError(message: String)

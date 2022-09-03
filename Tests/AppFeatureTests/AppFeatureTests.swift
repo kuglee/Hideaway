@@ -55,7 +55,7 @@ import XCTest
       reducer: AppFeature()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { "test" }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
@@ -99,7 +99,7 @@ import XCTest
       reducer: AppFeature()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { "test" }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
@@ -169,7 +169,7 @@ import XCTest
       reducer: AppFeature()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { "test" }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
@@ -222,7 +222,7 @@ import XCTest
       reducer: AppFeature()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { "test" }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
@@ -275,7 +275,7 @@ import XCTest
       reducer: AppFeature()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { "test" }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }

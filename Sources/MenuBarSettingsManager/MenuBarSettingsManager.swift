@@ -36,7 +36,7 @@ public struct MenuBarSettingsManager {
 
 extension MenuBarSettingsManager {
   public static var live: Self {
-    return .init(
+    .init(
       getAppMenuBarState: { bundleIdentifier in guard let bundleIdentifier else { return nil }
 
         do {
