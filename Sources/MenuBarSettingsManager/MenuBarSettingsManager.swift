@@ -1,6 +1,7 @@
 import AppKit
 import Defaults
 import MenuBarState
+import XCTestDynamicOverlay
 
 public enum MenuBarSettingsManagerError: Error, LocalizedError {
   case getError(message: String)
@@ -114,23 +115,19 @@ extension MenuBarSettingsManager {
   }
 }
 
-#if DEBUG
-  import XCTestDynamicOverlay
-
-  extension MenuBarSettingsManager {
-    public static let unimplemented = Self(
-      getAppMenuBarState: XCTUnimplemented("\(Self.self).getAppMenuBarState", placeholder: nil),
-      setAppMenuBarState: XCTUnimplemented("\(Self.self).setAppMenuBarState"),
-      getSystemMenuBarState: XCTUnimplemented(
-        "\(Self.self).getSystemMenuBarState",
-        placeholder: .inFullScreenOnly
-      ),
-      setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState"),
-      getBundleIdentifierOfCurrentApp: XCTUnimplemented(
-        "\(Self.self).getBundleIdentifierOfCurrentApp"
-      ),
-      getAppMenuBarStates: XCTUnimplemented("\(Self.self).getAppMenuBarStates", placeholder: nil),
-      setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates")
-    )
-  }
-#endif
+extension MenuBarSettingsManager {
+  public static let unimplemented = Self(
+    getAppMenuBarState: XCTUnimplemented("\(Self.self).getAppMenuBarState", placeholder: nil),
+    setAppMenuBarState: XCTUnimplemented("\(Self.self).setAppMenuBarState"),
+    getSystemMenuBarState: XCTUnimplemented(
+      "\(Self.self).getSystemMenuBarState",
+      placeholder: .inFullScreenOnly
+    ),
+    setSystemMenuBarState: XCTUnimplemented("\(Self.self).setSystemMenuBarState"),
+    getBundleIdentifierOfCurrentApp: XCTUnimplemented(
+      "\(Self.self).getBundleIdentifierOfCurrentApp"
+    ),
+    getAppMenuBarStates: XCTUnimplemented("\(Self.self).getAppMenuBarStates", placeholder: nil),
+    setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates")
+  )
+}

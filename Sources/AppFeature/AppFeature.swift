@@ -2,6 +2,7 @@ import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
 import SwiftUI
+import XCTestDynamicOverlay
 import os.log
 
 public struct AppMenuBarSaveState: Equatable {
@@ -311,32 +312,28 @@ extension AppFeatureEnvironment {
   )
 }
 
-#if DEBUG
-  import XCTestDynamicOverlay
-
-  extension AppFeatureEnvironment {
-    public static let unimplemented = Self(
-      postFullScreenMenuBarVisibilityChanged: XCTUnimplemented(
-        "\(Self.self).postFullScreenMenuBarVisibilityChanged"
-      ),
-      postMenuBarHidingChanged: XCTUnimplemented("\(Self.self).postMenuBarHidingChanged"),
-      fullScreenMenuBarVisibilityChanged: XCTUnimplemented(
-        "\(Self.self).fullScreenMenuBarVisibilityChanged",
-        placeholder: AsyncStream.never
-      ),
-      menuBarHidingChanged: XCTUnimplemented(
-        "\(Self.self).menuBarHidingChanged",
-        placeholder: AsyncStream.never
-      ),
-      didActivateApplication: XCTUnimplemented(
-        "\(Self.self).didActivateApplication",
-        placeholder: AsyncStream.never
-      ),
-      log: XCTUnimplemented("\(Self.self).log"),
-      terminate: XCTUnimplemented("\(Self.self).terminate")
-    )
-  }
-#endif
+extension AppFeatureEnvironment {
+  public static let unimplemented = Self(
+    postFullScreenMenuBarVisibilityChanged: XCTUnimplemented(
+      "\(Self.self).postFullScreenMenuBarVisibilityChanged"
+    ),
+    postMenuBarHidingChanged: XCTUnimplemented("\(Self.self).postMenuBarHidingChanged"),
+    fullScreenMenuBarVisibilityChanged: XCTUnimplemented(
+      "\(Self.self).fullScreenMenuBarVisibilityChanged",
+      placeholder: AsyncStream.never
+    ),
+    menuBarHidingChanged: XCTUnimplemented(
+      "\(Self.self).menuBarHidingChanged",
+      placeholder: AsyncStream.never
+    ),
+    didActivateApplication: XCTUnimplemented(
+      "\(Self.self).didActivateApplication",
+      placeholder: AsyncStream.never
+    ),
+    log: XCTUnimplemented("\(Self.self).log"),
+    terminate: XCTUnimplemented("\(Self.self).terminate")
+  )
+}
 
 extension Notification: @unchecked Sendable {}
 extension NotificationCenter.Notifications: @unchecked Sendable {}
