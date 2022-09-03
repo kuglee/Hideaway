@@ -43,8 +43,10 @@ import XCTest
     await didLog.withValue { XCTAssertTrue($0) }
   }
 
-  func testDidSetAppMenuBarStateSuccessAppStatesDoesNotExist() async {
+  func testAppMenuBarStateSelectedAppStatesDoesNotExist() async {
     let appStates = ActorIsolated([String: [String: Bool]]())
+    let didSetAppMenuBarState = ActorIsolated(false)
+    let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppFeature.State(
@@ -53,25 +55,42 @@ import XCTest
       reducer: AppFeature()
     )
 
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
+      await didSetAppMenuBarState.setValue(true)
+    }
+    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+      await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await appStates.setValue([:])
       return nil
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
-      await appStates.setValue(["test": MenuBarState.never.dictValue])
+      var states = await appStates.value
+      states["test"] = MenuBarState.never.dictValue
+      await appStates.setValue(states)
     }
 
-    let task = await store.send(
-      .didSetAppMenuBarState(.success(AppMenuBarSaveState(bundleIdentifier: "test", state: .never)))
-    )
+    let task = await store.send(.appMenuBarStateSelected(state: .never))
+
+    await store.receive(
+      .didSaveAppMenuBarState(
+        .success(AppMenuBarSaveState(bundleIdentifier: "test", state: .never))
+      )
+    ) { $0.appMenuBarState = .never }
 
     await task.finish()
 
     await appStates.withValue { XCTAssertEqual($0, ["test": MenuBarState.never.dictValue]) }
+    await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
+    await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
   }
 
-  func testDidSetAppMenuBarStateSuccessAppStatesExist() async {
+  func testAppMenuBarStateSelectedAppStatesExist() async {
     let appStates = ActorIsolated([String: [String: Bool]]())
+    let didSetAppMenuBarState = ActorIsolated(false)
+    let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppFeature.State(
@@ -80,6 +99,13 @@ import XCTest
       reducer: AppFeature()
     )
 
+    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = { return "test" }
+    store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
+      await didSetAppMenuBarState.setValue(true)
+    }
+    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+      await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await appStates.setValue(["app1": MenuBarState.always.dictValue])
       return nil
@@ -88,12 +114,15 @@ import XCTest
       var states = await appStates.value
       states["test"] = MenuBarState.never.dictValue
       await appStates.setValue(states)
-
     }
 
-    let task = await store.send(
-      .didSetAppMenuBarState(.success(AppMenuBarSaveState(bundleIdentifier: "test", state: .never)))
-    )
+    let task = await store.send(.appMenuBarStateSelected(state: .never))
+
+    await store.receive(
+      .didSaveAppMenuBarState(
+        .success(AppMenuBarSaveState(bundleIdentifier: "test", state: .never))
+      )
+    ) { $0.appMenuBarState = .never }
 
     await task.finish()
 
@@ -103,6 +132,8 @@ import XCTest
         ["app1": MenuBarState.always.dictValue, "test": MenuBarState.never.dictValue]
       )
     }
+    await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
+    await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testDidSetAppMenuBarStateError() async {
@@ -118,7 +149,7 @@ import XCTest
 
     store.dependencies.appEnvironment.log = { _ in await didLog.setValue(true) }
 
-    let task = await store.send(.didSetAppMenuBarState(.failure(error)))
+    let task = await store.send(.didSaveAppMenuBarState(.failure(error)))
 
     await task.finish()
 
@@ -157,10 +188,10 @@ import XCTest
       .appMenuBarStateSelected(
         state: .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: false)
       )
-    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: false) }
+    )
 
     await store.receive(
-      .didSetAppMenuBarState(
+      .didSaveAppMenuBarState(
         .success(
           AppMenuBarSaveState(
             bundleIdentifier: "test",
@@ -168,7 +199,7 @@ import XCTest
           )
         )
       )
-    )
+    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: false) }
 
     await task.finish()
 
@@ -210,10 +241,9 @@ import XCTest
       .appMenuBarStateSelected(
         state: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: true)
       )
-    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: true) }
-
+    )
     await store.receive(
-      .didSetAppMenuBarState(
+      .didSaveAppMenuBarState(
         .success(
           AppMenuBarSaveState(
             bundleIdentifier: "test",
@@ -221,7 +251,7 @@ import XCTest
           )
         )
       )
-    )
+    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: true) }
 
     await task.finish()
 
@@ -267,10 +297,10 @@ import XCTest
       .appMenuBarStateSelected(
         state: .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: true)
       )
-    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: true) }
+    )
 
     await store.receive(
-      .didSetAppMenuBarState(
+      .didSaveAppMenuBarState(
         .success(
           AppMenuBarSaveState(
             bundleIdentifier: "test",
@@ -278,7 +308,7 @@ import XCTest
           )
         )
       )
-    )
+    ) { $0.appMenuBarState = .init(menuBarVisibleInFullScreen: true, hideMenuBarOnDesktop: true) }
 
     await task.finish()
 
