@@ -8,7 +8,7 @@ public struct App: SwiftUI.App {
 
   public var body: some Scene {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
-      AppView(store: Store(initialState: AppFeature.State(), reducer: AppFeature()))
+      AppFeatureView(store: Store(initialState: AppFeature.State(), reducer: AppFeature()))
     }
   }
 }

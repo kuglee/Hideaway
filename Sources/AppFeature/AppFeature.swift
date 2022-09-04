@@ -338,7 +338,7 @@ extension AppFeatureEnvironment {
 extension Notification: @unchecked Sendable {}
 extension NotificationCenter.Notifications: @unchecked Sendable {}
 
-public struct AppView: View {
+public struct AppFeatureView: View {
   // WORKAROUND: onAppear and task are not being called when the view appears
   @MainActor class ForceOnAppear: ObservableObject { init() { Task { objectWillChange.send() } } }
   @StateObject var forceOnAppear = ForceOnAppear()
