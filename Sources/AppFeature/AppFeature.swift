@@ -1,3 +1,4 @@
+import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
@@ -5,11 +6,6 @@ import Notifications
 import SwiftUI
 import XCTestDynamicOverlay
 import os.log
-
-public struct AppMenuBarSaveState: Equatable {
-  public let bundleIdentifier: String
-  public let state: MenuBarState?
-}
 
 public struct AppFeature: ReducerProtocol {
   @Dependency(\.appEnvironment) var environment

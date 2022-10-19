@@ -1,3 +1,4 @@
+import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
