@@ -59,7 +59,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -103,7 +103,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -173,7 +173,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -226,7 +226,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -279,10 +279,10 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -333,7 +333,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
       await didSetSystemMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
 
@@ -365,7 +365,7 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
       await didSetSystemMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
 
@@ -398,10 +398,10 @@ import XCTest
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
       await didSetSystemMenuBarState.setValue(true)
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
 
@@ -428,15 +428,15 @@ import XCTest
 
     let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
 
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
         fullScreenMenuBarVisibilityChanged.compactMap {
           ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
         }
       )
     }
-    store.dependencies.appEnvironment.menuBarHidingChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.didActivateApplication = { AsyncStream.never }
+    store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
+    store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -465,15 +465,15 @@ import XCTest
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
       return "test"
     }
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
         fullScreenMenuBarVisibilityChanged.compactMap {
           ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
         }
       )
     }
-    store.dependencies.appEnvironment.menuBarHidingChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.didActivateApplication = { AsyncStream.never }
+    store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
+    store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
@@ -500,15 +500,15 @@ import XCTest
 
     let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
 
-    store.dependencies.appEnvironment.menuBarHidingChanged = {
+    store.dependencies.notifications.menuBarHidingChanged = {
       AsyncStream(
         menuBarHidingChanged.compactMap {
           ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
         }
       )
     }
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.didActivateApplication = { AsyncStream.never }
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
+    store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -536,15 +536,15 @@ import XCTest
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
       return "test"
     }
-    store.dependencies.appEnvironment.menuBarHidingChanged = {
+    store.dependencies.notifications.menuBarHidingChanged = {
       AsyncStream(
         menuBarHidingChanged.compactMap {
           ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
         }
       )
     }
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.didActivateApplication = { AsyncStream.never }
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
+    store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
@@ -577,12 +577,12 @@ import XCTest
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
       return "test"
     }
-    store.dependencies.appEnvironment.didActivateApplication = {
+    store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.menuBarHidingChanged = { AsyncStream.never }
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
+    store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -610,10 +610,10 @@ import XCTest
 
     let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
 
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
     store.dependencies.appEnvironment.terminate = { await didTerminate.setValue(true) }
@@ -644,10 +644,10 @@ import XCTest
       await didGetAppMenuBarStates.setValue(true)
       return [:]
     }
-    store.dependencies.appEnvironment.postFullScreenMenuBarVisibilityChanged = {
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
     }
-    store.dependencies.appEnvironment.postMenuBarHidingChanged = {
+    store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
@@ -669,9 +669,9 @@ import XCTest
   func testTask() async {
     let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
 
-    store.dependencies.appEnvironment.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.menuBarHidingChanged = { AsyncStream.never }
-    store.dependencies.appEnvironment.didActivateApplication = { AsyncStream.never }
+    store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
+    store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
+    store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
 
     let task = await store.send(.task)
 

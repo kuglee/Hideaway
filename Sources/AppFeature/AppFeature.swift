@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
+import Notifications
 import SwiftUI
 import XCTestDynamicOverlay
 import os.log
@@ -13,6 +14,7 @@ public struct AppMenuBarSaveState: Equatable {
 public struct AppFeature: ReducerProtocol {
   @Dependency(\.appEnvironment) var environment
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
+  @Dependency(\.notifications) var notifications
 
   public init() {}
 
@@ -91,13 +93,13 @@ public struct AppFeature: ReducerProtocol {
           if state.systemMenuBarState.rawValue.menuBarVisibleInFullScreen
             != oldSystemMenuBarState.rawValue.menuBarVisibleInFullScreen
           {
-            await self.environment.postFullScreenMenuBarVisibilityChanged()
+            await self.notifications.postFullScreenMenuBarVisibilityChanged()
           }
 
           if state.systemMenuBarState.rawValue.hideMenuBarOnDesktop
             != oldSystemMenuBarState.rawValue.hideMenuBarOnDesktop
           {
-            await self.environment.postMenuBarHidingChanged()
+            await self.notifications.postMenuBarHidingChanged()
           }
         }
       case .quitButtonPressed:
@@ -107,8 +109,8 @@ public struct AppFeature: ReducerProtocol {
               try await self.menuBarSettingsManager.setAppMenuBarState(nil, key)
             }
 
-            await self.environment.postFullScreenMenuBarVisibilityChanged()
-            await self.environment.postMenuBarHidingChanged()
+            await self.notifications.postFullScreenMenuBarVisibilityChanged()
+            await self.notifications.postMenuBarHidingChanged()
           }
 
           await self.environment.terminate()
@@ -158,15 +160,14 @@ public struct AppFeature: ReducerProtocol {
           if state.appMenuBarState?.rawValue.menuBarVisibleInFullScreen
             != oldAppMenuBarState?.rawValue.menuBarVisibleInFullScreen
           {
-            await self.environment.postFullScreenMenuBarVisibilityChanged()
+            await self.notifications.postFullScreenMenuBarVisibilityChanged()
           }
 
           if state.appMenuBarState?.rawValue.hideMenuBarOnDesktop
             != oldAppMenuBarState?.rawValue.hideMenuBarOnDesktop
           {
-            await self.environment.postMenuBarHidingChanged()
+            await self.notifications.postMenuBarHidingChanged()
           }
-
         }
       case let .didSaveAppMenuBarState(.failure(error)):
         return .run { _ in await self.environment.log(error.localizedDescription) }
@@ -195,8 +196,8 @@ public struct AppFeature: ReducerProtocol {
               )
             }
 
-            await self.environment.postFullScreenMenuBarVisibilityChanged()
-            await self.environment.postMenuBarHidingChanged()
+            await self.notifications.postFullScreenMenuBarVisibilityChanged()
+            await self.notifications.postMenuBarHidingChanged()
           }
 
           let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
@@ -216,17 +217,17 @@ public struct AppFeature: ReducerProtocol {
         return .run { send in
           await withTaskGroup(of: Void.self) { group in
             group.addTask {
-              for await _ in await self.environment.fullScreenMenuBarVisibilityChanged() {
+              for await _ in await self.notifications.fullScreenMenuBarVisibilityChanged() {
                 await send(.fullScreenMenuBarVisibilityChangedNotification)
               }
             }
             group.addTask {
-              for await _ in await self.environment.menuBarHidingChanged() {
+              for await _ in await self.notifications.menuBarHidingChanged() {
                 await send(.menuBarHidingChangedNotification)
               }
             }
             group.addTask {
-              for await _ in await self.environment.didActivateApplication() {
+              for await _ in await self.notifications.didActivateApplication() {
                 await send(.didActivateApplication)
               }
             }
@@ -261,52 +262,25 @@ extension DependencyValues {
   }
 }
 
+public enum NotificationsManagerKey: DependencyKey {
+  public static let liveValue = Notifications.live
+  public static let testValue = Notifications.unimplemented
+}
+
+extension DependencyValues {
+  public var notifications: Notifications {
+    get { self[NotificationsManagerKey.self] }
+    set { self[NotificationsManagerKey.self] = newValue }
+  }
+}
+
 public struct AppFeatureEnvironment {
-  public var postFullScreenMenuBarVisibilityChanged: () async -> Void
-  public var postMenuBarHidingChanged: () async -> Void
-  public var fullScreenMenuBarVisibilityChanged: @Sendable () async -> AsyncStream<Void>
-  public var menuBarHidingChanged: @Sendable () async -> AsyncStream<Void>
-  public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
   public var log: (String) async -> Void
   public var terminate: () async -> Void
 }
 
 extension AppFeatureEnvironment {
   public static let live = Self(
-    postFullScreenMenuBarVisibilityChanged: {
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
-    },
-    postMenuBarHidingChanged: {
-      DistributedNotificationCenter.default()
-        .post(
-          name: .AppleInterfaceMenuBarHidingChangedNotification,
-          object: Bundle.main.bundleIdentifier
-        )
-    },
-    fullScreenMenuBarVisibilityChanged: { @MainActor in
-      AsyncStream(
-        DistributedNotificationCenter.default()
-          .notifications(named: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification)
-          .compactMap { ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : () }
-      )
-    },
-    menuBarHidingChanged: { @MainActor in
-      AsyncStream(
-        DistributedNotificationCenter.default()
-          .notifications(named: .AppleInterfaceMenuBarHidingChangedNotification)
-          .compactMap { ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : () }
-      )
-    },
-    didActivateApplication: { @MainActor in
-      AsyncStream(
-        NSWorkspace.shared.notificationCenter
-          .notifications(named: NSWorkspace.didActivateApplicationNotification).map { _ in }
-      )
-    },
     log: { message in os_log("%{public}@", message) },
     terminate: { await NSApplication.shared.terminate(nil) }
   )
@@ -314,29 +288,10 @@ extension AppFeatureEnvironment {
 
 extension AppFeatureEnvironment {
   public static let unimplemented = Self(
-    postFullScreenMenuBarVisibilityChanged: XCTUnimplemented(
-      "\(Self.self).postFullScreenMenuBarVisibilityChanged"
-    ),
-    postMenuBarHidingChanged: XCTUnimplemented("\(Self.self).postMenuBarHidingChanged"),
-    fullScreenMenuBarVisibilityChanged: XCTUnimplemented(
-      "\(Self.self).fullScreenMenuBarVisibilityChanged",
-      placeholder: AsyncStream.never
-    ),
-    menuBarHidingChanged: XCTUnimplemented(
-      "\(Self.self).menuBarHidingChanged",
-      placeholder: AsyncStream.never
-    ),
-    didActivateApplication: XCTUnimplemented(
-      "\(Self.self).didActivateApplication",
-      placeholder: AsyncStream.never
-    ),
     log: XCTUnimplemented("\(Self.self).log"),
     terminate: XCTUnimplemented("\(Self.self).terminate")
   )
 }
-
-extension Notification: @unchecked Sendable {}
-extension NotificationCenter.Notifications: @unchecked Sendable {}
 
 public struct AppFeatureView: View {
   // WORKAROUND: onAppear and task are not being called when the view appears
@@ -372,14 +327,5 @@ public struct AppFeatureView: View {
       .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }
       .task { await viewStore.send(.task).finish() }
     }
-  }
-}
-
-extension Notification.Name {
-  public static var AppleInterfaceFullScreenMenuBarVisibilityChangedNotification: Notification.Name
-  { Self.init("AppleInterfaceFullScreenMenuBarVisibilityChangedNotification") }
-
-  public static var AppleInterfaceMenuBarHidingChangedNotification: Notification.Name {
-    Self.init("AppleInterfaceMenuBarHidingChangedNotification")
   }
 }
