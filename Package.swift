@@ -17,7 +17,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/pointfreeco/swift-composable-architecture",
-      branch: "protocol-beta"
+      from: "0.41.2"
     ),
   ],
   targets: [
