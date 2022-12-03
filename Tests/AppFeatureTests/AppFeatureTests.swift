@@ -8,10 +8,10 @@ import XCTest
 @MainActor final class AppFeatureTests: XCTestCase {
   func testGotAppMenuBarStateSuccess() async {
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     let task = await store.send(
@@ -28,13 +28,13 @@ import XCTest
     let didLog = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
-    store.dependencies.appEnvironment.log = { _ in await didLog.setValue(true) }
+    store.dependencies.appFeatureEnvironment.log = { _ in await didLog.setValue(true) }
 
     let task = await store.send(.gotAppMenuBarState(.failure(error)))
 
@@ -50,10 +50,10 @@ import XCTest
     let didPostAppMenuBarStateChanged = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -111,10 +111,10 @@ import XCTest
     let didPostAppMenuBarStateChanged = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -179,13 +179,13 @@ import XCTest
     let didLog = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
-    store.dependencies.appEnvironment.log = { _ in await didLog.setValue(true) }
+    store.dependencies.appFeatureEnvironment.log = { _ in await didLog.setValue(true) }
 
     let task = await store.send(.didSaveAppMenuBarState(.failure(error)))
 
@@ -202,10 +202,10 @@ import XCTest
     let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -260,10 +260,10 @@ import XCTest
     let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -318,10 +318,10 @@ import XCTest
     let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         appMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -377,10 +377,10 @@ import XCTest
     let didSetSystemMenuBarState = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         systemMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
@@ -409,10 +409,10 @@ import XCTest
     let didSetSystemMenuBarState = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         systemMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
@@ -442,10 +442,10 @@ import XCTest
     let didSetSystemMenuBarState = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppFeature.State(
+      initialState: AppFeatureReducer.State(
         systemMenuBarState: .init(menuBarVisibleInFullScreen: false, hideMenuBarOnDesktop: false)
       ),
-      reducer: AppFeature()
+      reducer: AppFeatureReducer()
     )
 
     store.dependencies.menuBarSettingsManager.setSystemMenuBarState = { _ in
@@ -479,7 +479,7 @@ import XCTest
     >
     .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
@@ -513,7 +513,7 @@ import XCTest
     >
     .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -555,7 +555,7 @@ import XCTest
     let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.menuBarHidingChanged = {
       AsyncStream(
@@ -587,7 +587,7 @@ import XCTest
     let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -634,7 +634,7 @@ import XCTest
     let (didActivateApplication, activateApplication) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -695,7 +695,7 @@ import XCTest
     let (didActivateApplication, activateApplication) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -744,7 +744,7 @@ import XCTest
     let (didActivateApplication, activateApplication) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -783,9 +783,9 @@ import XCTest
   func testQuitButtonPressedNoStates() async {
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.appEnvironment.terminate = { await didTerminate.setValue(true) }
+    store.dependencies.appFeatureEnvironment.terminate = { await didTerminate.setValue(true) }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = { [:] }
 
     let task = await store.send(.quitButtonPressed)
@@ -798,7 +798,7 @@ import XCTest
   func testQuitButtonPressedStateEqualsSystemDefault() async {
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -808,7 +808,7 @@ import XCTest
         ]
       ]
     }
-    store.dependencies.appEnvironment.terminate = { await didTerminate.setValue(true) }
+    store.dependencies.appFeatureEnvironment.terminate = { await didTerminate.setValue(true) }
 
     let task = await store.send(.quitButtonPressed)
 
@@ -823,7 +823,7 @@ import XCTest
     let didPostMenuBarHidingChanged = ActorIsolated(false)
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
@@ -843,7 +843,7 @@ import XCTest
         ]
       ]
     }
-    store.dependencies.appEnvironment.terminate = { await didTerminate.setValue(true) }
+    store.dependencies.appFeatureEnvironment.terminate = { await didTerminate.setValue(true) }
 
     let task = await store.send(.quitButtonPressed)
 
@@ -859,7 +859,7 @@ import XCTest
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didGetAppMenuBarStates = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -890,7 +890,7 @@ import XCTest
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didGetAppMenuBarStates = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -928,7 +928,7 @@ import XCTest
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
@@ -973,7 +973,7 @@ import XCTest
   }
 
   func testTask() async {
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
@@ -988,9 +988,9 @@ import XCTest
   func testSettingsButtonPressed() async {
     let didOpenSettings = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.appEnvironment.openSettings = { await didOpenSettings.setValue(true) }
+    store.dependencies.appFeatureEnvironment.openSettings = { await didOpenSettings.setValue(true) }
     
     await store.send(.settingsButtonPressed)
 

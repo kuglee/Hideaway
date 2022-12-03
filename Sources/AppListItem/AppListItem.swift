@@ -7,7 +7,7 @@ import SwiftUI
 import XCTestDynamicOverlay
 import os.log
 
-public struct AppListItem: ReducerProtocol {
+public struct AppListItemReducer: ReducerProtocol {
   @Dependency(\.appListItemEnvironment) var environment
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
   @Dependency(\.notifications) var notifications
@@ -154,9 +154,9 @@ extension DependencyValues {
 }
 
 public struct AppListItemView: View {
-  let store: StoreOf<AppListItem>
+  let store: StoreOf<AppListItemReducer>
 
-  public init(store: StoreOf<AppListItem>) { self.store = store }
+  public init(store: StoreOf<AppListItemReducer>) { self.store = store }
 
   public var body: some View {
     WithViewStore(store) { viewStore in
@@ -187,7 +187,7 @@ public struct AppListItem_Previews: PreviewProvider {
   public static var previews: some View {
     AppListItemView(
       store: Store(
-        initialState: AppListItem.State(
+        initialState: AppListItemReducer.State(
           menuBarSaveState: .init(
             bundleIdentifier: "com.apple.Safari",
             bundleURL: URL(
@@ -196,7 +196,7 @@ public struct AppListItem_Previews: PreviewProvider {
           ),
           id: UUID()
         ),
-        reducer: AppListItem()
+        reducer: AppListItemReducer()
       )
     )
   }

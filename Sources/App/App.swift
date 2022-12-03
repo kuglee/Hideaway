@@ -9,12 +9,17 @@ public struct App: SwiftUI.App {
 
   public var body: some Scene {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
-      AppFeatureView(store: Store(initialState: AppFeature.State(), reducer: AppFeature()))
+      AppFeatureView(
+        store: Store(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
+      )
     }
 
     Settings {
       SettingsFeatureView(
-        store: Store(initialState: SettingsFeature.State(), reducer: SettingsFeature())
+        store: Store(
+          initialState: SettingsFeatureReducer.State(),
+          reducer: SettingsFeatureReducer()
+        )
       )
       .frame(width: 500, height: 300, alignment: .top)
     }

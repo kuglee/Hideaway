@@ -6,8 +6,8 @@ import SwiftUI
 import XCTestDynamicOverlay
 import os.log
 
-public struct AppFeature: ReducerProtocol {
-  @Dependency(\.appEnvironment) var environment
+public struct AppFeatureReducer: ReducerProtocol {
+  @Dependency(\.appFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
   @Dependency(\.notifications) var notifications
 
@@ -313,7 +313,7 @@ public enum AppFeatureEnvironmentKey: DependencyKey {
 }
 
 extension DependencyValues {
-  public var appEnvironment: AppFeatureEnvironment {
+  public var appFeatureEnvironment: AppFeatureEnvironment {
     get { self[AppFeatureEnvironmentKey.self] }
     set { self[AppFeatureEnvironmentKey.self] = newValue }
   }
@@ -376,9 +376,9 @@ public struct AppFeatureView: View {
   @MainActor class ForceOnAppear: ObservableObject { init() { Task { objectWillChange.send() } } }
   @StateObject var forceOnAppear = ForceOnAppear()
 
-  let store: StoreOf<AppFeature>
+  let store: StoreOf<AppFeatureReducer>
 
-  public init(store: StoreOf<AppFeature>) { self.store = store }
+  public init(store: StoreOf<AppFeatureReducer>) { self.store = store }
 
   public var body: some View {
     WithViewStore(store) { viewStore in

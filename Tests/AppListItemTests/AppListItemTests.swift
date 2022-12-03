@@ -16,14 +16,14 @@ import XCTest
     let didGetRunningApps = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppListItem.State(
+      initialState: AppListItemReducer.State(
         menuBarSaveState: .init(
           bundleIdentifier: "com.example.App1",
           bundleURL: URL(string: "/Applications/App1.app/")!
         ),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
-      reducer: AppListItem()
+      reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -91,7 +91,7 @@ import XCTest
     let didGetRunningApps = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppListItem.State(
+      initialState: AppListItemReducer.State(
         menuBarSaveState: .init(
           bundleIdentifier: "com.example.App1",
           bundleURL: URL(string: "/Applications/App1.app/")!,
@@ -99,7 +99,7 @@ import XCTest
         ),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
-      reducer: AppListItem()
+      reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -152,7 +152,7 @@ import XCTest
     let didGetRunningApps = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppListItem.State(
+      initialState: AppListItemReducer.State(
         menuBarSaveState: .init(
           bundleIdentifier: "com.example.App1",
           bundleURL: URL(string: "/Applications/App1.app/")!,
@@ -160,7 +160,7 @@ import XCTest
         ),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
-      reducer: AppListItem()
+      reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
@@ -211,14 +211,14 @@ import XCTest
     let didLog = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppListItem.State(
+      initialState: AppListItemReducer.State(
         menuBarSaveState: .init(
           bundleIdentifier: "com.example.App1",
           bundleURL: URL(string: "/Applications/App1.app/")!
         ),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
-      reducer: AppListItem()
+      reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {

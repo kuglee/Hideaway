@@ -6,19 +6,19 @@ import MenuBarState
 import SwiftUI
 import XCTestDynamicOverlay
 
-public struct AppList: ReducerProtocol {
+public struct AppListReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
   @Dependency(\.uuid) var uuid
 
   public init() {}
 
   public struct State: Equatable {
-    public var appListItems: IdentifiedArrayOf<AppListItem.State>
+    public var appListItems: IdentifiedArrayOf<AppListItemReducer.State>
     @BindableState public var selectedItemIDs: Set<UUID>
     @BindableState public var isFileImporterPresented: Bool
 
     public init(
-      appListItems: IdentifiedArrayOf<AppListItem.State> = [],
+      appListItems: IdentifiedArrayOf<AppListItemReducer.State> = [],
       selectedItemIDs: Set<UUID> = [],
       isFileImporterPresented: Bool = false
     ) {
@@ -27,7 +27,7 @@ public struct AppList: ReducerProtocol {
       self.isFileImporterPresented = isFileImporterPresented
     }
 
-    var sortedAppListItems: IdentifiedArrayOf<AppListItem.State> {
+    var sortedAppListItems: IdentifiedArrayOf<AppListItemReducer.State> {
       IdentifiedArray(uniqueElements: self.appListItems.sorted(by: appListItemSorter))
     }
   }
@@ -36,7 +36,7 @@ public struct AppList: ReducerProtocol {
     case addButtonPressed
     case appImported(appInfo: AppInfo)
     case binding(BindingAction<State>)
-    case appListItem(id: AppListItem.State.ID, action: AppListItem.Action)
+    case appListItem(id: AppListItemReducer.State.ID, action: AppListItemReducer.Action)
     case didRemoveAppMenuBarStates(ids: Set<UUID>)
     case didSaveAppMenuBarState(AppMenuBarSaveState)
     case removeButtonPressed
@@ -90,7 +90,7 @@ public struct AppList: ReducerProtocol {
         return .none
       case let .didSaveAppMenuBarState(appMenuBarSaveState):
         state.appListItems.append(
-          AppListItem.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
+          AppListItemReducer.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
         )
         state.appListItems.sort(by: appListItemSorter)
 
@@ -111,7 +111,7 @@ public struct AppList: ReducerProtocol {
         }
       }
     }
-    .forEach(\State.appListItems, action: /Action.appListItem(id:action:)) { AppListItem() }
+    .forEach(\State.appListItems, action: /Action.appListItem(id:action:)) { AppListItemReducer() }
   }
 }
 
@@ -128,13 +128,13 @@ extension DependencyValues {
 }
 
 public struct AppListView: View {
-  let store: StoreOf<AppList>
+  let store: StoreOf<AppListReducer>
 
   private let separatorOpacity = 0.5
   private let listRowInsets = EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)
   @State private var listItemHeight = 0.0
 
-  public init(store: StoreOf<AppList>) { self.store = store }
+  public init(store: StoreOf<AppListReducer>) { self.store = store }
 
   public var body: some View {
     WithViewStore(store) { viewStore in
@@ -227,7 +227,7 @@ public struct AppListView: View {
   }
 }
 
-func appListItemSorter(lhs: AppListItem.State, rhs: AppListItem.State) -> Bool {
+func appListItemSorter(lhs: AppListItemReducer.State, rhs: AppListItemReducer.State) -> Bool {
   lhs.menuBarSaveState.bundleURL.lastPathComponent.lowercased()
     < rhs.menuBarSaveState.bundleURL.lastPathComponent.lowercased()
 }
@@ -253,7 +253,7 @@ public struct AppList_Previews: PreviewProvider {
     ScrollView {
       AppListView(
         store: Store(
-          initialState: AppList.State(
+          initialState: AppListReducer.State(
             appListItems: .init(uniqueElements: [
               .init(
                 menuBarSaveState: .init(
@@ -329,7 +329,7 @@ public struct AppList_Previews: PreviewProvider {
               ),
             ])
           ),
-          reducer: AppList()
+          reducer: AppListReducer()
         )
       )
       .padding([.top, .horizontal]).frame(width: 500)
@@ -340,8 +340,13 @@ public struct AppList_Previews: PreviewProvider {
 public struct AppList_Empty: PreviewProvider {
   public static var previews: some View {
     ScrollView {
-      AppListView(store: Store(initialState: AppList.State(appListItems: []), reducer: AppList()))
-        .padding([.top, .horizontal]).frame(width: 500)
+      AppListView(
+        store: Store(
+          initialState: AppListReducer.State(appListItems: []),
+          reducer: AppListReducer()
+        )
+      )
+      .padding([.top, .horizontal]).frame(width: 500)
     }
   }
 }

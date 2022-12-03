@@ -8,7 +8,7 @@ import SwiftUI
 import XCTestDynamicOverlay
 import os.log
 
-public struct SettingsFeature: ReducerProtocol {
+public struct SettingsFeatureReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
   @Dependency(\.notifications) var notifications
   @Dependency(\.uuid) var uuid
@@ -16,15 +16,15 @@ public struct SettingsFeature: ReducerProtocol {
   public init() {}
 
   public struct State: Equatable {
-    public var appList: AppList.State
+    public var appList: AppListReducer.State
 
-    public init(appList: AppList.State = .init()) { self.appList = appList }
+    public init(appList: AppListReducer.State = .init()) { self.appList = appList }
   }
 
   public enum Action: Equatable {
     case task
     case gotAppList([String: [String: String]])
-    case appList(action: AppList.Action)
+    case appList(action: AppListReducer.Action)
   }
 
   public var body: some ReducerProtocol<State, Action> {
@@ -54,14 +54,14 @@ public struct SettingsFeature: ReducerProtocol {
           )
 
           state.appList.appListItems.append(
-            AppListItem.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
+            AppListItemReducer.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
           )
         }
 
         return .none
       }
     }
-    Scope(state: \State.appList, action: /Action.appList(action:)) { AppList() }
+    Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
   }
 }
 
@@ -78,16 +78,18 @@ extension DependencyValues {
 }
 
 public struct SettingsFeatureView: View {
-  let store: StoreOf<SettingsFeature>
+  let store: StoreOf<SettingsFeatureReducer>
 
-  public init(store: StoreOf<SettingsFeature>) { self.store = store }
+  public init(store: StoreOf<SettingsFeatureReducer>) { self.store = store }
 
   public var body: some View {
     WithViewStore(store) { viewStore in
       ScrollView {
         VStack {
-          AppListView(store: store.scope(state: \.appList, action: SettingsFeature.Action.appList))
-            .task { await viewStore.send(.task).finish() }
+          AppListView(
+            store: store.scope(state: \.appList, action: SettingsFeatureReducer.Action.appList)
+          )
+          .task { await viewStore.send(.task).finish() }
         }
         .padding(20)
       }
@@ -99,10 +101,10 @@ public struct SettingsFeatureView_Previews: PreviewProvider {
   public static var previews: some View {
     SettingsFeatureView(
       store: Store(
-        initialState: SettingsFeature.State(
-          appList: AppList.State(
+        initialState: SettingsFeatureReducer.State(
+          appList: AppListReducer.State(
             appListItems: .init(uniqueElements: [
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.Safari",
                   bundleURL: URL(
@@ -111,63 +113,63 @@ public struct SettingsFeatureView_Previews: PreviewProvider {
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
                 ),
                 id: UUID()
               ),
-              AppListItem.State(
+              AppListItemReducer.State(
                 menuBarSaveState: .init(
                   bundleIdentifier: "com.apple.mail",
                   bundleURL: URL(string: "/System/Applications/Mail.app")!
@@ -177,7 +179,7 @@ public struct SettingsFeatureView_Previews: PreviewProvider {
             ])
           )
         ),
-        reducer: SettingsFeature()
+        reducer: SettingsFeatureReducer()
       )
     )
     .frame(width: 500, height: 300, alignment: .top)

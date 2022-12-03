@@ -10,7 +10,10 @@ import XCTest
     let (appMenuBarStateChanged, changeAppMenuBarState) = AsyncStream<Notification>
       .streamWithContinuation()
 
-    let store = TestStore(initialState: SettingsFeature.State(), reducer: SettingsFeature())
+    let store = TestStore(
+      initialState: SettingsFeatureReducer.State(),
+      reducer: SettingsFeatureReducer()
+    )
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       [
@@ -46,7 +49,7 @@ import XCTest
         "com.example.App2": ["bundlePath": "/Applications/App2.app/", "state": "always"],
       ])
     ) {
-      $0.appList = AppList.State(
+      $0.appList = AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(

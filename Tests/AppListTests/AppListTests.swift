@@ -7,17 +7,20 @@ import XCTest
 
 @MainActor final class AppListTests: XCTestCase {
   func testAddButtonPressed() async {
-    let store = TestStore(initialState: AppList.State(), reducer: AppList())
+    let store = TestStore(initialState: AppListReducer.State(), reducer: AppListReducer())
 
     await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
   }
-  
+
   func testAppImportEmpty() async {
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didSetAppMenuBarStates = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppList.State(appListItems: []), reducer: AppList())
+    let store = TestStore(
+      initialState: AppListReducer.State(appListItems: []),
+      reducer: AppListReducer()
+    )
 
     store.dependencies.uuid = UUIDGenerator { id }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -72,7 +75,7 @@ import XCTest
     let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppList.State(
+      initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(
@@ -90,7 +93,7 @@ import XCTest
           ),
         ])
       ),
-      reducer: AppList()
+      reducer: AppListReducer()
     )
 
     store.dependencies.uuid = UUIDGenerator { id }
@@ -158,7 +161,7 @@ import XCTest
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     let store = TestStore(
-      initialState: AppList.State(
+      initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(
@@ -183,7 +186,7 @@ import XCTest
           ),
         ])
       ),
-      reducer: AppList()
+      reducer: AppListReducer()
     )
 
     store.dependencies.uuid = UUIDGenerator { id }
@@ -204,7 +207,7 @@ import XCTest
 
   func testRemoveButtonPressedWithNoElementsSelected() async {
     let store = TestStore(
-      initialState: AppList.State(
+      initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(
@@ -216,7 +219,7 @@ import XCTest
         ]),
         selectedItemIDs: []
       ),
-      reducer: AppList()
+      reducer: AppListReducer()
     )
 
     let task = await store.send(.removeButtonPressed)
@@ -231,7 +234,7 @@ import XCTest
     let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
-      initialState: AppList.State(
+      initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(
@@ -257,7 +260,7 @@ import XCTest
         ]),
         selectedItemIDs: [id2, id3]
       ),
-      reducer: AppList()
+      reducer: AppListReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -292,7 +295,7 @@ import XCTest
   }
 
   func testSelectedItemsBinding() async {
-    let store = TestStore(initialState: AppList.State(), reducer: AppList())
+    let store = TestStore(initialState: AppListReducer.State(), reducer: AppListReducer())
 
     await store.send(
       .set(\.$selectedItemIDs, [UUID(uuidString: "00000000-0000-0000-0000-000000000001")!])
@@ -300,7 +303,7 @@ import XCTest
   }
 
   func testIsFileImporterPresentedBinding() async {
-    let store = TestStore(initialState: AppList.State(), reducer: AppList())
+    let store = TestStore(initialState: AppListReducer.State(), reducer: AppListReducer())
 
     await store.send(.set(\.$isFileImporterPresented, true)) { $0.isFileImporterPresented = true }
   }
