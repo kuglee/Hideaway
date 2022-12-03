@@ -1,4 +1,3 @@
-import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
@@ -40,6 +39,7 @@ public struct AppFeature: ReducerProtocol {
     case didTerminateApplication(bundleIdentifier: String)
     case viewAppeared
     case task
+    case settingsButtonPressed
   }
 
   public var body: some ReducerProtocol<State, Action> {
@@ -62,7 +62,8 @@ public struct AppFeature: ReducerProtocol {
                   await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
 
                 appStates[appInfo.bundleIdentifier] = [
-                  "bundlePath": appInfo.bundlePath, "state": menuBarState.stringValue,
+                  "bundlePath": appInfo.bundleURL.path(percentEncoded: true),
+                  "state": menuBarState.stringValue,
                 ]
 
                 await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
@@ -176,6 +177,8 @@ public struct AppFeature: ReducerProtocol {
           {
             await self.notifications.postMenuBarHidingChanged()
           }
+
+          await self.notifications.postAppMenuBarStateChanged()
         }
       case let .didSaveAppMenuBarState(.failure(error)):
         return .run { _ in await self.environment.log(error.localizedDescription) }
@@ -195,9 +198,10 @@ public struct AppFeature: ReducerProtocol {
                 bundleIdentifier
               )
 
-              if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates(),
-                let stringState = appStates[bundleIdentifier ?? ""]?["state"]
-              {
+              if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
+                let stringState =
+                  appStates[bundleIdentifier ?? ""]?["state"]
+                  ?? MenuBarState.systemDefault.stringValue
                 let state = MenuBarState(string: stringState)
 
                 if state != currentState {
@@ -297,6 +301,7 @@ public struct AppFeature: ReducerProtocol {
             }
           }
         }
+      case .settingsButtonPressed: return .run { _ in await self.environment.openSettings() }
       }
     }
   }
@@ -341,19 +346,28 @@ extension DependencyValues {
 public struct AppFeatureEnvironment {
   public var log: (String) async -> Void
   public var terminate: () async -> Void
+  public var openSettings: () async -> Void
 }
 
 extension AppFeatureEnvironment {
   public static let live = Self(
     log: { message in os_log("%{public}@", message) },
-    terminate: { await NSApplication.shared.terminate(nil) }
+    terminate: { await NSApplication.shared.terminate(nil) },
+    openSettings: {
+      _ = await NSApplication.shared.sendAction(
+        Selector(("showSettingsWindow:")),
+        to: nil,
+        from: nil
+      )
+    }
   )
 }
 
 extension AppFeatureEnvironment {
   public static let unimplemented = Self(
     log: XCTUnimplemented("\(Self.self).log"),
-    terminate: XCTUnimplemented("\(Self.self).terminate")
+    terminate: XCTUnimplemented("\(Self.self).terminate"),
+    openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
 
@@ -383,6 +397,8 @@ public struct AppFeatureView: View {
           ),
           label: Text("Hide the menu bar system-wide")
         ) { ForEach(SystemMenuBarState.allCases, id: \.self) { Text($0.label) } }
+        Button("Settings...") { viewStore.send(.settingsButtonPressed) }
+        Divider()
         Button("Quit Hideaway") { viewStore.send(.quitButtonPressed) }
       }
       .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }

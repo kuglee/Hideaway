@@ -1,4 +1,3 @@
-import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
@@ -48,6 +47,7 @@ import XCTest
     let appStates = ActorIsolated([String: [String: String]]())
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
+    let didPostAppMenuBarStateChanged = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppFeature.State(
@@ -57,13 +57,19 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
+    store.dependencies.notifications.postAppMenuBarStateChanged = {
+      await didPostAppMenuBarStateChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await appStates.setValue([:])
@@ -95,12 +101,14 @@ import XCTest
     }
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
+    await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testAppMenuBarStateSelectedAppStatesExist() async {
     let appStates = ActorIsolated([String: [String: String]]())
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
+    let didPostAppMenuBarStateChanged = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppFeature.State(
@@ -110,13 +118,19 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
+    store.dependencies.notifications.postAppMenuBarStateChanged = {
+      await didPostAppMenuBarStateChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await appStates.setValue([
@@ -128,7 +142,7 @@ import XCTest
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
       var states = await appStates.value
-      states[ "com.example.App2"] = [
+      states["com.example.App2"] = [
         "bundlePath": "/Applications/App2.app/", "state": MenuBarState.never.stringValue,
       ]
 
@@ -148,7 +162,7 @@ import XCTest
           "com.example.App1": [
             "bundlePath": "/Applications/App1.app/", "state": MenuBarState.always.stringValue,
           ],
-           "com.example.App2": [
+          "com.example.App2": [
             "bundlePath": "/Applications/App2.app/", "state": MenuBarState.never.stringValue,
           ],
         ]
@@ -157,6 +171,7 @@ import XCTest
     }
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
+    await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testDidSetAppMenuBarStateError() async {
@@ -182,6 +197,7 @@ import XCTest
   func testAppMenuBarStateSelectedWithOnlyFullScreenMenuBarVisibilityChange() async {
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
+    let didPostAppMenuBarStateChanged = ActorIsolated(false)
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didSetAppMenuBarStates = ActorIsolated(false)
 
@@ -193,13 +209,19 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
+    store.dependencies.notifications.postAppMenuBarStateChanged = {
+      await didPostAppMenuBarStateChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -225,6 +247,7 @@ import XCTest
 
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
+    await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
@@ -232,6 +255,7 @@ import XCTest
   func testAppMenuBarStateSelectedWithOnlyMenuBarHidingChange() async {
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
+    let didPostAppMenuBarStateChanged = ActorIsolated(false)
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didSetAppMenuBarStates = ActorIsolated(false)
 
@@ -243,13 +267,19 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
+    }
+    store.dependencies.notifications.postAppMenuBarStateChanged = {
+      await didPostAppMenuBarStateChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -274,6 +304,7 @@ import XCTest
 
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
+    await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
@@ -282,6 +313,7 @@ import XCTest
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
+    let didPostAppMenuBarStateChanged = ActorIsolated(false)
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didSetAppMenuBarStates = ActorIsolated(false)
 
@@ -293,7 +325,10 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -303,6 +338,9 @@ import XCTest
     }
     store.dependencies.notifications.postMenuBarHidingChanged = {
       await didPostMenuBarHidingChanged.setValue(true)
+    }
+    store.dependencies.notifications.postAppMenuBarStateChanged = {
+      await didPostAppMenuBarStateChanged.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -329,6 +367,7 @@ import XCTest
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
+    await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
@@ -478,7 +517,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
@@ -549,7 +591,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.notifications.menuBarHidingChanged = {
       AsyncStream(
@@ -593,7 +638,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
@@ -603,7 +651,11 @@ import XCTest
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      [ "com.example.App1": ["bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue]]
+      [
+        "com.example.App1": [
+          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
+        ]
+      ]
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
@@ -647,14 +699,21 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      [ "com.example.App1": ["bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue]]
+      [
+        "com.example.App1": [
+          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
+        ]
+      ]
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
@@ -689,16 +748,18 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
     }
-    store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
+    store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = { [:] }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
-    store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -710,7 +771,7 @@ import XCTest
     activateApplication.yield(notification)
 
     await store.receive(.didActivateApplication)
-    await store.receive(.gotAppMenuBarState(.success(.never))) { $0.appMenuBarState = .never }
+    await store.receive(.gotAppMenuBarState(.success(.systemDefault)))
 
     await task.cancel()
 
@@ -776,7 +837,11 @@ import XCTest
     }
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      [ "com.example.App1": ["bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue]]
+      [
+        "com.example.App1": [
+          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
+        ]
+      ]
     }
     store.dependencies.appEnvironment.terminate = { await didTerminate.setValue(true) }
 
@@ -798,7 +863,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -826,7 +894,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -861,7 +932,10 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(bundleIdentifier: "com.example.App1", bundlePath: "/Applications/App1.app/")
+      return AppInfo(
+        bundleIdentifier: "com.example.App1",
+        bundleURL: URL(string: "/Applications/App1.app/")!
+      )
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -909,5 +983,17 @@ import XCTest
     let task = await store.send(.task)
 
     await task.cancel()
+  }
+
+  func testSettingsButtonPressed() async {
+    let didOpenSettings = ActorIsolated(false)
+
+    let store = TestStore(initialState: AppFeature.State(), reducer: AppFeature())
+
+    store.dependencies.appEnvironment.openSettings = { await didOpenSettings.setValue(true) }
+    
+    await store.send(.settingsButtonPressed)
+
+    await didOpenSettings.withValue { XCTAssertTrue($0) }
   }
 }

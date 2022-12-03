@@ -6,8 +6,10 @@ import XCTestDynamicOverlay
 public struct Notifications {
   public var postFullScreenMenuBarVisibilityChanged: () async -> Void
   public var postMenuBarHidingChanged: () async -> Void
+  public var postAppMenuBarStateChanged: () async -> Void
   public var fullScreenMenuBarVisibilityChanged: @Sendable () async -> AsyncStream<Void>
   public var menuBarHidingChanged: @Sendable () async -> AsyncStream<Void>
+  public var appMenuBarStateChanged: @Sendable () async -> AsyncStream<Void>
   public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
   public var didTerminateApplication: @Sendable () async -> AsyncStream<String?>
 }
@@ -26,6 +28,12 @@ extension Notifications {
         object: Bundle.main.bundleIdentifier
       )
     },
+    postAppMenuBarStateChanged: {
+      NotificationCenter.default.post(
+        name: .AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification,
+        object: Bundle.main.bundleIdentifier
+      )
+    },
     fullScreenMenuBarVisibilityChanged: { @MainActor in
       AsyncStream(
         DistributedNotificationCenter.default()
@@ -38,6 +46,16 @@ extension Notifications {
         DistributedNotificationCenter.default()
           .notifications(named: .AppleInterfaceMenuBarHidingChangedNotification)
           .compactMap { ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : () }
+      )
+    },
+    appMenuBarStateChanged: { @MainActor in
+      AsyncStream(
+        NotificationCenter.default
+          .notifications(
+            named:
+              .AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification
+          )
+          .map { _ in }
       )
     },
     didActivateApplication: { @MainActor in
@@ -66,12 +84,17 @@ extension Notifications {
       "\(Self.self).postFullScreenMenuBarVisibilityChanged"
     ),
     postMenuBarHidingChanged: XCTUnimplemented("\(Self.self).postMenuBarHidingChanged"),
+    postAppMenuBarStateChanged: XCTUnimplemented("\(Self.self).postAppMenuBarStateChanged"),
     fullScreenMenuBarVisibilityChanged: XCTUnimplemented(
       "\(Self.self).fullScreenMenuBarVisibilityChanged",
       placeholder: AsyncStream.never
     ),
     menuBarHidingChanged: XCTUnimplemented(
       "\(Self.self).menuBarHidingChanged",
+      placeholder: AsyncStream.never
+    ),
+    appMenuBarStateChanged: XCTUnimplemented(
+      "\(Self.self).appMenuBarStateChanged",
       placeholder: AsyncStream.never
     ),
     didActivateApplication: XCTUnimplemented(
@@ -95,4 +118,9 @@ extension Notification.Name {
   public static var AppleInterfaceMenuBarHidingChangedNotification: Notification.Name {
     Self.init("AppleInterfaceMenuBarHidingChangedNotification")
   }
+
+  public static
+    var AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification:
+    Notification.Name
+  { Self.init("AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification") }
 }

@@ -1,13 +1,14 @@
+import Foundation
 import MenuBarState
 
-public struct AppMenuBarSaveState: Equatable {
+public struct AppMenuBarSaveState: Equatable, Hashable {
   public var bundleIdentifier: String
-  public var bundlePath: String
+  public var bundleURL: URL
   public var state: MenuBarState
 
-  public init(bundleIdentifier: String, bundlePath: String, state: MenuBarState = .systemDefault) {
+  public init(bundleIdentifier: String, bundleURL: URL, state: MenuBarState = .systemDefault) {
     self.bundleIdentifier = bundleIdentifier
-    self.bundlePath = bundlePath
+    self.bundleURL = bundleURL
     self.state = state
   }
 }

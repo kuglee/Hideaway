@@ -5,11 +5,11 @@ import XCTestDynamicOverlay
 
 public struct AppInfo: Equatable {
   public let bundleIdentifier: String
-  public let bundlePath: String
+  public let bundleURL: URL
 
-  public init(bundleIdentifier: String, bundlePath: String) {
+  public init(bundleIdentifier: String, bundleURL: URL) {
     self.bundleIdentifier = bundleIdentifier
-    self.bundlePath = bundlePath
+    self.bundleURL = bundleURL
   }
 }
 
@@ -116,12 +116,10 @@ extension MenuBarSettingsManager {
       },
       getBundleIdentifierOfCurrentApp: {
         guard let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-          let bundlePath = NSWorkspace.shared.frontmostApplication?.bundleURL?
-            .path(percentEncoded: false)
+          let bundleURL = NSWorkspace.shared.frontmostApplication?.bundleURL
         else { return nil }
 
-        return AppInfo(bundleIdentifier: bundleIdentifier, bundlePath: bundlePath)
-
+        return AppInfo(bundleIdentifier: bundleIdentifier, bundleURL: bundleURL)
       },
       getAppMenuBarStates: {
         UserDefaults.standard.dictionary(forKey: appStatesKey) as? [String: [String: String]]
