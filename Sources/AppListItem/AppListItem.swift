@@ -25,14 +25,14 @@ public struct AppListItemReducer: ReducerProtocol {
   }
 
   public enum Action: Equatable {
-    case didSaveMenuBarState(TaskResult<MenuBarState>)
+    case didSaveMenuBarState(MenuBarState)
     case menuBarStateSelected(state: MenuBarState)
   }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
-      case let .didSaveMenuBarState(.success(menuBarState)):
+      case let .didSaveMenuBarState(menuBarState):
         let oldAppMenuBarState = state.menuBarSaveState.state
 
         state.menuBarSaveState.state = menuBarState
@@ -58,30 +58,22 @@ public struct AppListItemReducer: ReducerProtocol {
               await self.notifications.postMenuBarHidingChanged()
             }
           }
-        } catch: { error, send in
-          await send(.didSaveMenuBarState(.failure(error)))
+        } catch: { error, _ in
+          await self.environment.log(error.localizedDescription)
         }
-      case let .didSaveMenuBarState(.failure(error)):
-        return .run { _ in await self.environment.log(error.localizedDescription) }
       case let .menuBarStateSelected(menuBarState):
         return .run { [state] send in
-          await send(
-            .didSaveMenuBarState(
-              TaskResult {
-                var appStates: [String: [String: String]] =
-                  await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
+          var appStates: [String: [String: String]] =
+            await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
 
-                appStates[state.menuBarSaveState.bundleIdentifier] = [
-                  "bundlePath": state.menuBarSaveState.bundleURL.path(percentEncoded: true),
-                  "state": menuBarState.stringValue,
-                ]
+          appStates[state.menuBarSaveState.bundleIdentifier] = [
+            "bundlePath": state.menuBarSaveState.bundleURL.path(percentEncoded: true),
+            "state": menuBarState.stringValue,
+          ]
 
-                await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
+          await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
 
-                return menuBarState
-              }
-            )
-          )
+          await send(.didSaveMenuBarState(menuBarState))
         }
       }
     }

@@ -59,7 +59,7 @@ import XCTest
 
     let task = await store.send(.menuBarStateSelected(state: .never))
 
-    await store.receive(.didSaveMenuBarState(.success(.never))) {
+    await store.receive(.didSaveMenuBarState(.never)) {
       $0.menuBarSaveState = .init(
         bundleIdentifier: "com.example.App1",
         bundleURL: URL(string: "/Applications/App1.app/")!,
@@ -129,7 +129,7 @@ import XCTest
 
     let task = await store.send(.menuBarStateSelected(state: .never))
 
-    await store.receive(.didSaveMenuBarState(.success(.never)))
+    await store.receive(.didSaveMenuBarState(.never))
 
     await task.finish()
 
@@ -187,7 +187,7 @@ import XCTest
 
     let task = await store.send(.menuBarStateSelected(state: .never))
 
-    await store.receive(.didSaveMenuBarState(.success(.never)))
+    await store.receive(.didSaveMenuBarState(.never))
 
     await task.finish()
 
@@ -251,18 +251,13 @@ import XCTest
 
     let task = await store.send(.menuBarStateSelected(state: .never))
 
-    await store.receive(.didSaveMenuBarState(.success(.never))) {
+    await store.receive(.didSaveMenuBarState(.never)) {
       $0.menuBarSaveState = .init(
         bundleIdentifier: "com.example.App1",
         bundleURL: URL(string: "/Applications/App1.app/")!,
         state: .never
       )
     }
-    await store.receive(
-      .didSaveMenuBarState(
-        TaskResult.failure(MenuBarSettingsManagerError.appError(message: "Test error"))
-      )
-    )
 
     await task.finish()
 
