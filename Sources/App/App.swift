@@ -21,7 +21,7 @@ public struct App: SwiftUI.App {
           reducer: SettingsFeatureReducer()
         )
       )
-      .frame(width: 500, height: 300, alignment: .top)
+      .frame(minWidth: 550, maxWidth: 550, minHeight: 450, maxHeight: .infinity, alignment: .top)
     }
     .windowResizability(.contentSize)
   }
