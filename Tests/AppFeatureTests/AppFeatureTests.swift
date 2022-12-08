@@ -20,10 +20,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -81,10 +78,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -149,10 +143,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -182,10 +173,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -238,10 +226,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -294,10 +279,7 @@ import XCTest
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -484,10 +466,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+
+      return "com.example.App1"
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
       AsyncStream(
@@ -560,10 +540,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.notifications.menuBarHidingChanged = {
       AsyncStream(
@@ -608,10 +586,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
@@ -621,11 +597,7 @@ import XCTest
       await didSetAppMenuBarState.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
-        ]
-      ]
+      ["com.example.App1": MenuBarState.never.stringValue]
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
@@ -669,10 +641,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
@@ -680,9 +650,8 @@ import XCTest
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
-        ]
+        "com.example.App1": MenuBarState.never.stringValue
+
       ]
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
@@ -717,10 +686,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.notifications.didActivateApplication = {
       AsyncStream(didActivateApplication.map { _ in })
@@ -770,11 +737,7 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.systemDefault.stringValue,
-        ]
-      ]
+      ["com.example.App1": MenuBarState.systemDefault.stringValue]
     }
     store.dependencies.appFeatureEnvironment.terminate = { await didTerminate.setValue(true) }
 
@@ -806,9 +769,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
-        ]
+        "com.example.App1": MenuBarState.never.stringValue
+
       ]
     }
     store.dependencies.appFeatureEnvironment.terminate = { await didTerminate.setValue(true) }
@@ -831,10 +793,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
@@ -862,17 +822,14 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
       return [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
-        ]
+        "com.example.App1": MenuBarState.never.stringValue
+
       ]
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
@@ -900,17 +857,14 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
       await didGetBundleIdentifierOfCurrentApp.setValue(true)
-      return AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      
+      return "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
       return [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.always.stringValue,
-        ]
+        "com.example.App1": MenuBarState.always.stringValue
+
       ]
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in

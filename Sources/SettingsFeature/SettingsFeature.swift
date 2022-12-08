@@ -23,7 +23,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
 
   public enum Action: Equatable {
     case task
-    case gotAppList([String: [String: String]])
+    case gotAppList([String: String])
     case appList(action: AppListReducer.Action)
   }
 
@@ -42,14 +42,11 @@ public struct SettingsFeatureReducer: ReducerProtocol {
       case let .gotAppList(appListItems):
         state.appList.appListItems = []
 
-        for (key, value) in appListItems {
-          let bundleIdentifier = key
-          let bundlePath = value["bundlePath"]!
-          let menuBarState = MenuBarState.init(string: value["state"]!)
+        for (bundleIdentifier, stringState) in appListItems {
+          let menuBarState = MenuBarState.init(string: stringState)
 
           let appMenuBarSaveState = AppMenuBarSaveState(
             bundleIdentifier: bundleIdentifier,
-            bundleURL: URL(string: bundlePath)!,
             state: menuBarState
           )
 
@@ -105,75 +102,43 @@ public struct SettingsFeatureView_Previews: PreviewProvider {
           appList: AppListReducer.State(
             appListItems: .init(uniqueElements: [
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.Safari",
-                  bundleURL: URL(
-                    string: "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app"
-                  )!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
               AppListItemReducer.State(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
                 id: UUID()
               ),
             ])

@@ -17,12 +17,8 @@ import XCTest
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       [
-        "com.example.App1": [
-          "bundlePath": "/Applications/App1.app/", "state": MenuBarState.never.stringValue,
-        ],
-        "com.example.App2": [
-          "bundlePath": "/Applications/App2.app/", "state": MenuBarState.always.stringValue,
-        ],
+        "com.example.App1": MenuBarState.never.stringValue,
+        "com.example.App2": MenuBarState.always.stringValue,
       ]
     }
     store.dependencies.notifications.appMenuBarStateChanged = {
@@ -43,28 +39,15 @@ import XCTest
 
     changeAppMenuBarState.yield(notification)
 
-    await store.receive(
-      .gotAppList([
-        "com.example.App1": ["bundlePath": "/Applications/App1.app/", "state": "never"],
-        "com.example.App2": ["bundlePath": "/Applications/App2.app/", "state": "always"],
-      ])
-    ) {
+    await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"])) {
       $0.appList = AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App1",
-              bundleURL: URL(string: "/Applications/App1.app/")!,
-              state: .never
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
           ),
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App2",
-              bundleURL: URL(string: "/Applications/App2.app/")!,
-              state: .always
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
           ),
         ])

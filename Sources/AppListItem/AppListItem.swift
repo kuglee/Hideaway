@@ -63,14 +63,10 @@ public struct AppListItemReducer: ReducerProtocol {
         }
       case let .menuBarStateSelected(menuBarState):
         return .run { [state] send in
-          var appStates: [String: [String: String]] =
+          var appStates: [String: String] =
             await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
 
-          appStates[state.menuBarSaveState.bundleIdentifier] = [
-            "bundlePath": state.menuBarSaveState.bundleURL.path(percentEncoded: true),
-            "state": menuBarState.stringValue,
-          ]
-
+          appStates[state.menuBarSaveState.bundleIdentifier] = menuBarState.stringValue
           await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
 
           await send(.didSaveMenuBarState(menuBarState))
@@ -153,8 +149,8 @@ public struct AppListItemView: View {
   public var body: some View {
     WithViewStore(store) { viewStore in
       HStack {
-        Image(nsImage: getAppIcon(bundlePath: viewStore.menuBarSaveState.bundleURL))
-        Text("\(getAppName(bundlePath: viewStore.menuBarSaveState.bundleURL))")
+        Image(nsImage: getAppIcon(bundleIdentifier: viewStore.menuBarSaveState.bundleIdentifier))
+        Text("\(getAppName(bundleIdentifier: viewStore.menuBarSaveState.bundleIdentifier))")
         Spacer()
         Picker(
           selection: viewStore.binding(
@@ -169,10 +165,15 @@ public struct AppListItemView: View {
   }
 }
 
-func getAppName(bundlePath: URL) -> String { String(bundlePath.lastPathComponent.dropLast(4)) }
+func getAppName(bundleIdentifier: String) -> String {
+  let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)!
+  return String(bundleURL.lastPathComponent.dropLast(4))
+}
 
-func getAppIcon(bundlePath: URL) -> NSImage {
-  return NSWorkspace.shared.icon(forFile: bundlePath.relativePath)
+func getAppIcon(bundleIdentifier: String) -> NSImage {
+  let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)!
+
+  return NSWorkspace.shared.icon(forFile: bundleURL.relativePath)
 }
 
 public struct AppListItem_Previews: PreviewProvider {
@@ -180,12 +181,7 @@ public struct AppListItem_Previews: PreviewProvider {
     AppListItemView(
       store: Store(
         initialState: AppListItemReducer.State(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.apple.Safari",
-            bundleURL: URL(
-              string: "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app"
-            )!
-          ),
+          menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"),
           id: UUID()
         ),
         reducer: AppListItemReducer()

@@ -28,13 +28,32 @@ public struct AppListReducer: ReducerProtocol {
     }
 
     var sortedAppListItems: IdentifiedArrayOf<AppListItemReducer.State> {
-      IdentifiedArray(uniqueElements: self.appListItems.sorted(by: appListItemSorter))
+      var appNames = [String: String]()
+
+      for item in self.appListItems {
+        let appName = NSWorkspace.shared.urlForApplication(
+          withBundleIdentifier: item.menuBarSaveState.bundleIdentifier
+        )?
+        .lastPathComponent.lowercased()
+
+        appNames[item.menuBarSaveState.bundleIdentifier] = appName
+      }
+
+      return IdentifiedArray(
+        uniqueElements: self.appListItems.sorted { lhs, rhs in
+          guard let lhsAppName = appNames[lhs.menuBarSaveState.bundleIdentifier],
+            let rhsAppName = appNames[rhs.menuBarSaveState.bundleIdentifier]
+          else { return true }
+
+          return lhsAppName < rhsAppName
+        }
+      )
     }
   }
 
   public enum Action: Equatable, BindableAction {
     case addButtonPressed
-    case appImported(appInfo: AppInfo)
+    case appImported(bundleIdentifier: String)
     case binding(BindingAction<State>)
     case appListItem(id: AppListItemReducer.State.ID, action: AppListItemReducer.Action)
     case didRemoveAppMenuBarStates(ids: Set<UUID>)
@@ -51,30 +70,26 @@ public struct AppListReducer: ReducerProtocol {
         state.isFileImporterPresented = true
 
         return .none
-      case let .appImported(appInfo):
+      case let .appImported(bundleIdentifier):
         guard
           !(state.appListItems.map { $0.menuBarSaveState.bundleIdentifier }
-            .contains(appInfo.bundleIdentifier))
+            .contains(bundleIdentifier))
         else { return .none }
 
         return .run { send in
           let menuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
-            appInfo.bundleIdentifier
+            bundleIdentifier
           )
 
-          var appStates: [String: [String: String]] =
+          var appStates: [String: String] =
             await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
 
-          appStates[appInfo.bundleIdentifier] = [
-            "bundlePath": appInfo.bundleURL.path(percentEncoded: true),
-            "state": menuBarState.stringValue,
-          ]
+          appStates[bundleIdentifier] = menuBarState.stringValue
 
           await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
 
           let appMenuBarSaveState = AppMenuBarSaveState(
-            bundleIdentifier: appInfo.bundleIdentifier,
-            bundleURL: appInfo.bundleURL,
+            bundleIdentifier: bundleIdentifier,
             state: menuBarState
           )
 
@@ -92,13 +107,12 @@ public struct AppListReducer: ReducerProtocol {
         state.appListItems.append(
           AppListItemReducer.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
         )
-        state.appListItems.sort(by: appListItemSorter)
 
         return .none
       case .removeButtonPressed:
         return .run { [state] send in guard !state.selectedItemIDs.isEmpty else { return }
 
-          var appStates: [String: [String: String]] =
+          var appStates: [String: String] =
             await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
 
           for selectedItemID in state.selectedItemIDs {
@@ -204,11 +218,7 @@ public struct AppListView: View {
               if case let .success(bundleURL) = $0,
                 let bundleIdentifier = Bundle(url: bundleURL).flatMap({ $0.bundleIdentifier })
               {
-                viewStore.send(
-                  .appImported(
-                    appInfo: .init(bundleIdentifier: bundleIdentifier, bundleURL: bundleURL)
-                  )
-                )
+                viewStore.send(.appImported(bundleIdentifier: bundleIdentifier))
               }
             }
             .buttonStyle(PrimaryButtonStyle())
@@ -225,11 +235,6 @@ public struct AppListView: View {
   func getListRowHeight() -> Double {
     self.listItemHeight + self.listRowInsets.top + self.listRowInsets.bottom
   }
-}
-
-func appListItemSorter(lhs: AppListItemReducer.State, rhs: AppListItemReducer.State) -> Bool {
-  lhs.menuBarSaveState.bundleURL.lastPathComponent.lowercased()
-    < rhs.menuBarSaveState.bundleURL.lastPathComponent.lowercased()
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
@@ -255,78 +260,16 @@ public struct AppList_Previews: PreviewProvider {
         store: Store(
           initialState: AppListReducer.State(
             appListItems: .init(uniqueElements: [
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.Safari",
-                  bundleURL: URL(
-                    string: "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app"
-                  )!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
-              .init(
-                menuBarSaveState: .init(
-                  bundleIdentifier: "com.apple.mail",
-                  bundleURL: URL(string: "/System/Applications/Mail.app")!
-                ),
-                id: UUID()
-              ),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
             ])
           ),
           reducer: AppListReducer()

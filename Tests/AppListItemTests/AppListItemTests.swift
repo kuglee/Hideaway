@@ -17,20 +17,14 @@ import XCTest
 
     let store = TestStore(
       initialState: AppListItemReducer.State(
-        menuBarSaveState: .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!
-        ),
+        menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
       reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -60,11 +54,7 @@ import XCTest
     let task = await store.send(.menuBarStateSelected(state: .never))
 
     await store.receive(.didSaveMenuBarState(.never)) {
-      $0.menuBarSaveState = .init(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!,
-        state: .never
-      )
+      $0.menuBarSaveState = .init(bundleIdentifier: "com.example.App1", state: .never)
     }
 
     await task.finish()
@@ -92,21 +82,14 @@ import XCTest
 
     let store = TestStore(
       initialState: AppListItemReducer.State(
-        menuBarSaveState: .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!,
-          state: .never
-        ),
+        menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
       reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -153,21 +136,14 @@ import XCTest
 
     let store = TestStore(
       initialState: AppListItemReducer.State(
-        menuBarSaveState: .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!,
-          state: .never
-        ),
+        menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
       reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await appStates.setValue([:])
@@ -212,20 +188,14 @@ import XCTest
 
     let store = TestStore(
       initialState: AppListItemReducer.State(
-        menuBarSaveState: .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!
-        ),
+        menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
       ),
       reducer: AppListItemReducer()
     )
 
     store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      AppInfo(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!
-      )
+      "com.example.App1"
     }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
       await didSetAppMenuBarState.setValue(true)
@@ -252,11 +222,7 @@ import XCTest
     let task = await store.send(.menuBarStateSelected(state: .never))
 
     await store.receive(.didSaveMenuBarState(.never)) {
-      $0.menuBarSaveState = .init(
-        bundleIdentifier: "com.example.App1",
-        bundleURL: URL(string: "/Applications/App1.app/")!,
-        state: .never
-      )
+      $0.menuBarSaveState = .init(bundleIdentifier: "com.example.App1", state: .never)
     }
 
     await task.finish()

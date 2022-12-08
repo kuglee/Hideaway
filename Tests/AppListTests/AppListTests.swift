@@ -35,31 +35,11 @@ import XCTest
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
-    await store.send(
-      .appImported(
-        appInfo: .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!
-        )
-      )
-    )
+    await store.send(.appImported(bundleIdentifier: "com.example.App1"))
 
-    await store.receive(
-      .didSaveAppMenuBarState(
-        .init(
-          bundleIdentifier: "com.example.App1",
-          bundleURL: URL(string: "/Applications/App1.app/")!
-        )
-      )
-    ) {
+    await store.receive(.didSaveAppMenuBarState(.init(bundleIdentifier: "com.example.App1"))) {
       $0.appListItems = .init(uniqueElements: [
-        .init(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.example.App1",
-            bundleURL: URL(string: "/Applications/App1.app/")!
-          ),
-          id: id
-        )
+        .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App1"), id: id)
       ])
     }
 
@@ -78,19 +58,9 @@ import XCTest
       initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App1",
-              bundleURL: URL(string: "/Applications/App1.app/")!
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-          ),
-          .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App3",
-              bundleURL: URL(string: "/Applications/App3.app/")!
-            ),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
-          ),
+          )
         ])
       ),
       reducer: AppListReducer()
@@ -109,45 +79,14 @@ import XCTest
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
-    await store.send(
-      .appImported(
-        appInfo: .init(
-          bundleIdentifier: "com.example.App2",
-          bundleURL: URL(string: "/Applications/App2.app/")!
-        )
-      )
-    )
+    await store.send(.appImported(bundleIdentifier: "com.example.App2"))
 
-    await store.receive(
-      .didSaveAppMenuBarState(
-        .init(
-          bundleIdentifier: "com.example.App2",
-          bundleURL: URL(string: "/Applications/App2.app/")!
-        )
-      )
-    ) {
+    await store.receive(.didSaveAppMenuBarState(.init(bundleIdentifier: "com.example.App2"))) {
       $0.appListItems = .init(uniqueElements: [
         .init(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.example.App1",
-            bundleURL: URL(string: "/Applications/App1.app/")!
-          ),
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
           id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-        ),
-        .init(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.example.App2",
-            bundleURL: URL(string: "/Applications/App2.app/")!
-          ),
-          id: id
-        ),
-        .init(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.example.App3",
-            bundleURL: URL(string: "/Applications/App3.app/")!
-          ),
-          id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
-        ),
+        ), .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App2"), id: id),
       ])
     }
 
@@ -164,26 +103,9 @@ import XCTest
       initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App1",
-              bundleURL: URL(string: "/Applications/App1.app/")!
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-          ),
-          .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App2",
-              bundleURL: URL(string: "/Applications/App2.app/")!
-            ),
-            id: id
-          ),
-          .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App3",
-              bundleURL: URL(string: "/Applications/App3.app/")!
-            ),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
-          ),
+          ), .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App2"), id: id),
         ])
       ),
       reducer: AppListReducer()
@@ -193,14 +115,7 @@ import XCTest
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
-    await store.send(
-      .appImported(
-        appInfo: .init(
-          bundleIdentifier: "com.example.App2",
-          bundleURL: URL(string: "/Applications/App2.app/")!
-        )
-      )
-    )
+    await store.send(.appImported(bundleIdentifier: "com.example.App2"))
 
     await task.finish()
   }
@@ -210,10 +125,7 @@ import XCTest
       initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App1",
-              bundleURL: URL(string: "/Applications/App1.app/")!
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
           )
         ]),
@@ -237,26 +149,10 @@ import XCTest
       initialState: AppListReducer.State(
         appListItems: .init(uniqueElements: [
           .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App1",
-              bundleURL: URL(string: "/Applications/App1.app/")!
-            ),
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-          ),
-          .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App2",
-              bundleURL: URL(string: "/Applications/App2.app/")!
-            ),
-            id: id2
-          ),
-          .init(
-            menuBarSaveState: .init(
-              bundleIdentifier: "com.example.App2",
-              bundleURL: URL(string: "/Applications/App2.app/")!
-            ),
-            id: id3
-          ),
+          ), .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App2"), id: id2),
+          .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App2"), id: id3),
         ]),
         selectedItemIDs: [id2, id3]
       ),
@@ -277,10 +173,7 @@ import XCTest
     await store.receive(.didRemoveAppMenuBarStates(ids: [id2, id3])) {
       $0.appListItems = .init(uniqueElements: [
         .init(
-          menuBarSaveState: .init(
-            bundleIdentifier: "com.example.App1",
-            bundleURL: URL(string: "/Applications/App1.app/")!
-          ),
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
           id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
         )
       ])

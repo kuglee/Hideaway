@@ -3,16 +3,6 @@ import Defaults
 import MenuBarState
 import XCTestDynamicOverlay
 
-public struct AppInfo: Equatable {
-  public let bundleIdentifier: String
-  public let bundleURL: URL
-
-  public init(bundleIdentifier: String, bundleURL: URL) {
-    self.bundleIdentifier = bundleIdentifier
-    self.bundleURL = bundleURL
-  }
-}
-
 public enum MenuBarSettingsManagerError: Error, LocalizedError, Equatable {
   case getError(message: String)
   case setError(message: String)
@@ -39,9 +29,9 @@ public struct MenuBarSettingsManager {
   public var setAppMenuBarState: (MenuBarState, String?) async throws -> Void
   public var getSystemMenuBarState: () async -> SystemMenuBarState
   public var setSystemMenuBarState: (SystemMenuBarState) async -> Void
-  public var getBundleIdentifierOfCurrentApp: () async -> AppInfo?
-  public var getAppMenuBarStates: () async -> [String: [String: String]]?
-  public var setAppMenuBarStates: ([String: [String: String]]) async -> Void
+  public var getBundleIdentifierOfCurrentApp: () async -> String?
+  public var getAppMenuBarStates: () async -> [String: String]?
+  public var setAppMenuBarStates: ([String: String]) async -> Void
 }
 
 extension MenuBarSettingsManager {
@@ -115,14 +105,10 @@ extension MenuBarSettingsManager {
         Defaults.set(key: .hideMenuBarOnDesktopKey, value: state.rawValue.hideMenuBarOnDesktop)
       },
       getBundleIdentifierOfCurrentApp: {
-        guard let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-          let bundleURL = NSWorkspace.shared.frontmostApplication?.bundleURL
-        else { return nil }
-
-        return AppInfo(bundleIdentifier: bundleIdentifier, bundleURL: bundleURL)
+        NSWorkspace.shared.frontmostApplication?.bundleIdentifier
       },
       getAppMenuBarStates: {
-        UserDefaults.standard.dictionary(forKey: appStatesKey) as? [String: [String: String]]
+        UserDefaults.standard.dictionary(forKey: appStatesKey) as? [String: String]
       },
       setAppMenuBarStates: { appStates in
         UserDefaults.standard.setValue(appStates, forKey: appStatesKey)
