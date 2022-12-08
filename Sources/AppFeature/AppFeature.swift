@@ -166,7 +166,7 @@ public struct AppFeatureReducer: ReducerProtocol {
 
         return .none
       case .didActivateApplication:
-        return .run { send in
+        return .run { [state] send in
           let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
           let currentMenuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
             bundleIdentifier
@@ -184,7 +184,9 @@ public struct AppFeatureReducer: ReducerProtocol {
               )
               await self.notifications.postFullScreenMenuBarVisibilityChanged()
               await self.notifications.postMenuBarHidingChanged()
-
+            }
+            
+            if state.appMenuBarState != savedMenuBarState {
               await send(.gotAppMenuBarState(savedMenuBarState))
             }
           }
