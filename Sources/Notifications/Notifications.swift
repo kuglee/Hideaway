@@ -12,6 +12,7 @@ public struct Notifications {
   public var appMenuBarStateChanged: @Sendable () async -> AsyncStream<Void>
   public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
   public var didTerminateApplication: @Sendable () async -> AsyncStream<String?>
+  public var settingsWindowWillClose: @Sendable () async -> AsyncStream<Void>
 }
 
 extension Notifications {
@@ -74,6 +75,18 @@ extension Notifications {
             return app?.bundleIdentifier
           }
       )
+    },
+    settingsWindowWillClose: { @MainActor in
+      AsyncStream(
+        NotificationCenter.default.notifications(named: NSWindow.willCloseNotification)
+          .compactMap {
+            guard let window = $0.object as? NSWindow, await !window.title.isEmpty else {
+              return nil
+            }
+
+            return ()
+          }
+      )
     }
   )
 }
@@ -103,6 +116,10 @@ extension Notifications {
     ),
     didTerminateApplication: XCTUnimplemented(
       "\(Self.self).didTerminateApplication",
+      placeholder: AsyncStream.never
+    ),
+    settingsWindowWillClose: XCTUnimplemented(
+      "\(Self.self).settingsWindowWillClose",
       placeholder: AsyncStream.never
     )
   )

@@ -9,6 +9,9 @@ import XCTest
   func testTask() async {
     let (appMenuBarStateChanged, changeAppMenuBarState) = AsyncStream<Notification>
       .streamWithContinuation()
+    let (settingsWindowWillCloseFinished, settingsWindowWillClose) = AsyncStream<Notification>
+      .streamWithContinuation()
+    let didSetAccessoryActivationPolicy = ActorIsolated(false)
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -27,6 +30,12 @@ import XCTest
           ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
         }
       )
+    }
+    store.dependencies.notifications.settingsWindowWillClose = {
+      AsyncStream(settingsWindowWillCloseFinished.map { _ in })
+    }
+    store.dependencies.settingsFeatureEnvironment.setAccessoryActivationPolicy = {
+      await didSetAccessoryActivationPolicy.setValue(true)
     }
     store.dependencies.uuid = .incrementing
 
@@ -54,8 +63,13 @@ import XCTest
       )
     }
 
+    settingsWindowWillClose.yield(notification)
+    await store.receive(.settingsWindowWillClose)
+    await didSetAccessoryActivationPolicy.withValue { XCTAssertTrue($0) }
+
     await task.cancel()
 
     changeAppMenuBarState.yield(notification)
+    settingsWindowWillClose.yield(notification)
   }
 }

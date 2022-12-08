@@ -9,6 +9,7 @@ import XCTestDynamicOverlay
 import os.log
 
 public struct SettingsFeatureReducer: ReducerProtocol {
+  @Dependency(\.settingsFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
   @Dependency(\.notifications) var notifications
   @Dependency(\.uuid) var uuid
@@ -25,6 +26,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     case task
     case gotAppList([String: String])
     case appList(action: AppListReducer.Action)
+    case settingsWindowWillClose
   }
 
   public var body: some ReducerProtocol<State, Action> {
@@ -32,11 +34,20 @@ public struct SettingsFeatureReducer: ReducerProtocol {
       switch action {
       case .task:
         return .run { send in
-          var appMenuBarStateChanged = await self.notifications.appMenuBarStateChanged()
-            .makeAsyncIterator()
-          repeat {
-            await send(.gotAppList(self.getAppMenuBarStates() ?? .init()))
-          } while await appMenuBarStateChanged.next() != nil
+          await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+              var appMenuBarStateChanged = await self.notifications.appMenuBarStateChanged()
+                .makeAsyncIterator()
+              repeat {
+                await send(.gotAppList(self.getAppMenuBarStates() ?? .init()))
+              } while await appMenuBarStateChanged.next() != nil
+            }
+            group.addTask {
+              for await _ in await self.notifications.settingsWindowWillClose() {
+                await send(.settingsWindowWillClose)
+              }
+            }
+          }
         }
       case .appList(action: _): return .none
       case let .gotAppList(appListItems):
@@ -56,9 +67,23 @@ public struct SettingsFeatureReducer: ReducerProtocol {
         }
 
         return .none
+      case .settingsWindowWillClose:
+        return .run { _ in await self.environment.setAccessoryActivationPolicy() }
       }
     }
     Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
+  }
+}
+
+public enum SettingsFeatureEnvironmentKey: DependencyKey {
+  public static let liveValue = SettingsFeatureEnvironment.live
+  public static let testValue = SettingsFeatureEnvironment.unimplemented
+}
+
+extension DependencyValues {
+  public var settingsFeatureEnvironment: SettingsFeatureEnvironment {
+    get { self[SettingsFeatureEnvironmentKey.self] }
+    set { self[SettingsFeatureEnvironmentKey.self] = newValue }
   }
 }
 
@@ -72,6 +97,30 @@ extension DependencyValues {
     get { self[MenuBarSettingsManagerKey.self] }
     set { self[MenuBarSettingsManagerKey.self] = newValue }
   }
+}
+
+public struct SettingsFeatureEnvironment {
+  public var setAccessoryActivationPolicy: () async -> Void
+}
+
+extension SettingsFeatureEnvironment {
+  public static let live = Self(setAccessoryActivationPolicy: {
+    func changeToTheNextApp() async {
+      await NSApplication.shared.hide(nil)
+
+      // wait for the hiding to finish
+      try? await Task.sleep(for: .milliseconds(10))
+    }
+
+    await changeToTheNextApp()
+    await NSApplication.shared.setActivationPolicy(.accessory)
+  })
+}
+
+extension SettingsFeatureEnvironment {
+  public static let unimplemented = Self(
+    setAccessoryActivationPolicy: XCTUnimplemented("\(Self.self).setAccessoryActivationPolicy")
+  )
 }
 
 public struct SettingsFeatureView: View {

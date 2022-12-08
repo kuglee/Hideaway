@@ -185,7 +185,7 @@ public struct AppFeatureReducer: ReducerProtocol {
               await self.notifications.postFullScreenMenuBarVisibilityChanged()
               await self.notifications.postMenuBarHidingChanged()
             }
-            
+
             if state.appMenuBarState != savedMenuBarState {
               await send(.gotAppMenuBarState(savedMenuBarState))
             }
@@ -329,11 +329,19 @@ extension AppFeatureEnvironment {
     log: { message in os_log("%{public}@", message) },
     terminate: { await NSApplication.shared.terminate(nil) },
     openSettings: {
-      _ = await NSApplication.shared.sendAction(
+      await NSApplication.shared.setActivationPolicy(.regular)
+
+      let success = await NSApplication.shared.sendAction(
         Selector(("showSettingsWindow:")),
         to: nil,
         from: nil
       )
+
+      if success {
+        await NSApplication.shared.activate(ignoringOtherApps: true)
+      } else {
+        await NSApplication.shared.setActivationPolicy(.accessory)
+      }
     }
   )
 }
