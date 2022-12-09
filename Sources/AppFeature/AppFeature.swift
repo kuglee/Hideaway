@@ -381,6 +381,7 @@ public struct AppFeatureView: View {
           label: Text("Hide the menu bar system-wide")
         ) { ForEach(SystemMenuBarState.allCases, id: \.self) { Text($0.label) } }
         Button("Settings...") { viewStore.send(.settingsButtonPressed) }
+          .keyboardShortcut(",", modifiers: .command)
         Divider()
         Button("Quit Hideaway") { viewStore.send(.quitButtonPressed) }
       }
