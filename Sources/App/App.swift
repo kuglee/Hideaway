@@ -22,7 +22,12 @@ public struct App: SwiftUI.App {
         )
       )
       .frame(minWidth: 550, maxWidth: 550, minHeight: 450, maxHeight: .infinity, alignment: .top)
+      .onAppear { NSWindow.allowsAutomaticWindowTabbing = false }
     }
     .windowResizability(.contentSize)
+    .commands {
+      // disable the settings keyboard shortcut
+      CommandGroup(replacing: CommandGroupPlacement.appSettings) {}
+    }
   }
 }
