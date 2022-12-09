@@ -13,6 +13,10 @@ public struct App: SwiftUI.App {
         store: Store(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
       )
     }
+    .commands {
+      // disable the quit keyboard shortcut
+      CommandGroup(replacing: CommandGroupPlacement.appTermination) {}
+    }
 
     Settings {
       SettingsFeatureView(
