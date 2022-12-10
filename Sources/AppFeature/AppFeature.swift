@@ -32,7 +32,7 @@ public struct AppFeatureReducer: ReducerProtocol {
     case didSaveAppMenuBarState(MenuBarState)
     case systemMenuBarStateSelected(state: SystemMenuBarState)
     case gotSystemMenuBarState(SystemMenuBarState)
-    case quitButtonPressed
+    case applicationTerminated
     case fullScreenMenuBarVisibilityChangedNotification
     case menuBarHidingChangedNotification
     case didActivateApplication
@@ -85,7 +85,7 @@ public struct AppFeatureReducer: ReducerProtocol {
             await self.notifications.postMenuBarHidingChanged()
           }
         }
-      case .quitButtonPressed:
+      case .applicationTerminated:
         return .run { _ in
           if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
             var didSetState = false
@@ -110,7 +110,7 @@ public struct AppFeatureReducer: ReducerProtocol {
             }
           }
 
-          await self.environment.terminate()
+          await self.environment.applicationShouldTerminate()
         }
       case .fullScreenMenuBarVisibilityChangedNotification:
         return .run { send in
@@ -274,6 +274,11 @@ public struct AppFeatureReducer: ReducerProtocol {
                 }
               }
             }
+            group.addTask {
+              for await _ in await self.notifications.applicationShouldTerminateLater() {
+                await send(.applicationTerminated)
+              }
+            }
           }
         }
       case .settingsButtonPressed: return .run { _ in await self.environment.openSettings() }
@@ -320,14 +325,16 @@ extension DependencyValues {
 
 public struct AppFeatureEnvironment {
   public var log: (String) async -> Void
-  public var terminate: () async -> Void
+  public var applicationShouldTerminate: () async -> Void
   public var openSettings: () async -> Void
 }
 
 extension AppFeatureEnvironment {
   public static let live = Self(
     log: { message in os_log("%{public}@", message) },
-    terminate: { await NSApplication.shared.terminate(nil) },
+    applicationShouldTerminate: {
+      await NSApplication.shared.reply(toApplicationShouldTerminate: true)
+    },
     openSettings: {
       await NSApplication.shared.setActivationPolicy(.regular)
 
@@ -349,7 +356,7 @@ extension AppFeatureEnvironment {
 extension AppFeatureEnvironment {
   public static let unimplemented = Self(
     log: XCTUnimplemented("\(Self.self).log"),
-    terminate: XCTUnimplemented("\(Self.self).terminate"),
+    applicationShouldTerminate: XCTUnimplemented("\(Self.self).applicationShouldTerminate"),
     openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
@@ -383,7 +390,10 @@ public struct AppFeatureView: View {
         Button("Settings...") { viewStore.send(.settingsButtonPressed) }
           .keyboardShortcut(",", modifiers: .command)
         Divider()
-        Button("Quit Hideaway") { viewStore.send(.quitButtonPressed) }
+        Button("Quit Hideaway") {
+          // doesn't work if called from an async context
+          NSApplication.shared.terminate(nil)
+        }
       }
       .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }
       .task { await viewStore.send(.task).finish() }

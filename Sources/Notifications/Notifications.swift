@@ -13,6 +13,7 @@ public struct Notifications {
   public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
   public var didTerminateApplication: @Sendable () async -> AsyncStream<String?>
   public var settingsWindowWillClose: @Sendable () async -> AsyncStream<Void>
+  public var applicationShouldTerminateLater: @Sendable () async -> AsyncStream<Void>
 }
 
 extension Notifications {
@@ -87,6 +88,12 @@ extension Notifications {
             return ()
           }
       )
+    },
+    applicationShouldTerminateLater: { @MainActor in
+      AsyncStream(
+        NotificationCenter.default
+          .notifications(named: NSApplication.applicationShouldTerminateLater).map { _ in }
+      )
     }
   )
 }
@@ -121,7 +128,12 @@ extension Notifications {
     settingsWindowWillClose: XCTUnimplemented(
       "\(Self.self).settingsWindowWillClose",
       placeholder: AsyncStream.never
+    ),
+    applicationShouldTerminateLater: XCTUnimplemented(
+      "\(Self.self).applicationShouldTerminateLater",
+      placeholder: AsyncStream.never
     )
+
   )
 }
 
@@ -140,4 +152,10 @@ extension Notification.Name {
     var AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification:
     Notification.Name
   { Self.init("AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification") }
+}
+
+extension NSApplication {
+  public static var applicationShouldTerminateLater: Notification.Name {
+    Notification.Name("applicationShouldTerminateLater")
+  }
 }

@@ -30,6 +30,7 @@ let package = Package(
         "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "MenuBarSettingsManager",
+        "Notifications",
         "SettingsFeature",
       ]
     ),
