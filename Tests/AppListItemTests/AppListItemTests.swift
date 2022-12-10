@@ -63,13 +63,9 @@ import XCTest
       return ["com.example.App1"]
     }
 
-    let task = await store.send(.menuBarStateSelected(state: .never))
-
-    await store.receive(.didSaveMenuBarState(.never)) {
+    await store.send(.menuBarStateSelected(state: .never)) {
       $0.menuBarSaveState = .init(bundleIdentifier: "com.example.App1", state: .never)
     }
-
-    await task.finish()
 
     await appStates.withValue {
       XCTAssertEqual(
@@ -126,10 +122,12 @@ import XCTest
     }
     store.dependencies.appListItemEnvironment.log = { _ in await didLog.setValue(true) }
 
-    let task = await store.send(.menuBarStateSelected(state: .never))
-
-    await store.receive(.didSaveMenuBarState(.never)) {
+    let task = await store.send(.menuBarStateSelected(state: .never)) {
       $0.menuBarSaveState = .init(bundleIdentifier: "com.example.App1", state: .never)
+    }
+
+    await store.receive(.saveMenuBarStateFailed(oldState: .systemDefault)) {
+      $0.menuBarSaveState = .init(bundleIdentifier: "com.example.App1", state: .systemDefault)
     }
 
     await task.finish()

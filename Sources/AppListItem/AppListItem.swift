@@ -25,19 +25,28 @@ public struct AppListItemReducer: ReducerProtocol {
   }
 
   public enum Action: Equatable {
-    case didSaveMenuBarState(MenuBarState)
     case menuBarStateSelected(state: MenuBarState)
+    case saveMenuBarStateFailed(oldState: MenuBarState)
   }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
-      case let .didSaveMenuBarState(menuBarState):
-        let oldAppMenuBarState = state.menuBarSaveState.state
+      case let .menuBarStateSelected(menuBarState):
+        guard menuBarState != state.menuBarSaveState.state else { return .none }
+
+        let oldMenuBarState = state.menuBarSaveState.state
 
         state.menuBarSaveState.state = menuBarState
 
-        return .run { [state] _ in
+        return .run { [state, oldMenuBarState] send in
+          var appStates: [String: String] =
+            await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
+
+          appStates[state.menuBarSaveState.bundleIdentifier] =
+            state.menuBarSaveState.state.stringValue
+          await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
+
           if await self.environment.getRunningApps()
             .contains(state.menuBarSaveState.bundleIdentifier)
           {
@@ -47,32 +56,25 @@ public struct AppListItemReducer: ReducerProtocol {
             )
 
             if state.menuBarSaveState.state.rawValue.menuBarVisibleInFullScreen
-              != oldAppMenuBarState.rawValue.menuBarVisibleInFullScreen
+              != oldMenuBarState.rawValue.menuBarVisibleInFullScreen
             {
               await self.notifications.postFullScreenMenuBarVisibilityChanged()
             }
 
             if state.menuBarSaveState.state.rawValue.hideMenuBarOnDesktop
-              != oldAppMenuBarState.rawValue.hideMenuBarOnDesktop
+              != oldMenuBarState.rawValue.hideMenuBarOnDesktop
             {
               await self.notifications.postMenuBarHidingChanged()
             }
           }
-        } catch: { error, _ in
+        } catch: { error, send in
+          await send(.saveMenuBarStateFailed(oldState: oldMenuBarState))
           await self.environment.log(error.localizedDescription)
         }
-      case let .menuBarStateSelected(menuBarState):
-        guard menuBarState != state.menuBarSaveState.state else { return .none }
+      case let .saveMenuBarStateFailed(oldState):
+        state.menuBarSaveState.state = oldState
 
-        return .run { [state] send in
-          var appStates: [String: String] =
-            await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
-
-          appStates[state.menuBarSaveState.bundleIdentifier] = menuBarState.stringValue
-          await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
-
-          await send(.didSaveMenuBarState(menuBarState))
-        }
+        return .none
       }
     }
   }
