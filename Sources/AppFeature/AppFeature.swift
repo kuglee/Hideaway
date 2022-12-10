@@ -394,6 +394,7 @@ public struct AppFeatureView: View {
           // doesn't work if called from an async context
           NSApplication.shared.terminate(nil)
         }
+        .keyboardShortcut("q", modifiers: .command)
       }
       .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }
       .task { await viewStore.send(.task).finish() }
