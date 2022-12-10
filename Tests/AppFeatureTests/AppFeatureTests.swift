@@ -6,6 +6,15 @@ import XCTest
 @testable import AppFeature
 
 @MainActor final class AppFeatureTests: XCTestCase {
+  func testAppMenuBarStateReselect() async {
+    let store = TestStore(
+      initialState: AppFeatureReducer.State(appMenuBarState: .never),
+      reducer: AppFeatureReducer()
+    )
+
+    await store.send(.appMenuBarStateSelected(state: .never))
+  }
+
   func testAppMenuBarStateSelectedAppStatesDoesNotExist() async {
     let appStates = ActorIsolated([String: [String: String]]())
     let didSetAppMenuBarState = ActorIsolated(false)
@@ -319,6 +328,15 @@ import XCTest
     await didPostAppMenuBarStateChanged.withValue { XCTAssertTrue($0) }
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
+  }
+
+  func testSystemMenuBarStateReselect() async {
+    let store = TestStore(
+      initialState: AppFeatureReducer.State(systemMenuBarState: .never),
+      reducer: AppFeatureReducer()
+    )
+
+    await store.send(.systemMenuBarStateSelected(state: .never))
   }
 
   func testSystemMenuBarStateSelectedWithOnlyFullScreenMenuBarVisibilityChange() async {

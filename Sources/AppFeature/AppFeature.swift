@@ -46,6 +46,8 @@ public struct AppFeatureReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case let .appMenuBarStateSelected(menuBarState):
+        guard menuBarState != state.appMenuBarState else { return .none }
+
         return .run { send in
           guard
             let bundleIdentifier = await self.menuBarSettingsManager
@@ -66,6 +68,8 @@ public struct AppFeatureReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       case let .systemMenuBarStateSelected(menuBarState):
+        guard menuBarState != state.systemMenuBarState else { return .none }
+
         let oldSystemMenuBarState = state.systemMenuBarState
 
         state.systemMenuBarState = menuBarState

@@ -62,6 +62,8 @@ public struct AppListItemReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       case let .menuBarStateSelected(menuBarState):
+        guard menuBarState != state.menuBarSaveState.state else { return .none }
+
         return .run { [state] send in
           var appStates: [String: String] =
             await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
