@@ -384,7 +384,6 @@ public struct AppFeatureView: View {
           .keyboardShortcut(",", modifiers: .command)
         Divider()
         Button("Quit Hideaway") { viewStore.send(.quitButtonPressed) }
-          .keyboardShortcut("q", modifiers: .command)
       }
       .pickerStyle(.inline).onAppear { viewStore.send(.viewAppeared) }
       .task { await viewStore.send(.task).finish() }
