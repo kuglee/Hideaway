@@ -29,7 +29,7 @@ public struct AppFeatureReducer: ReducerProtocol {
   public enum Action: Equatable {
     case appMenuBarStateSelected(state: MenuBarState)
     case gotAppMenuBarState(MenuBarState)
-    case didSaveAppMenuBarState(MenuBarState)
+    case saveAppMenuBarStateFailed(oldState: MenuBarState)
     case systemMenuBarStateSelected(state: SystemMenuBarState)
     case gotSystemMenuBarState(SystemMenuBarState)
     case applicationTerminated
@@ -47,8 +47,12 @@ public struct AppFeatureReducer: ReducerProtocol {
       switch action {
       case let .appMenuBarStateSelected(menuBarState):
         guard menuBarState != state.appMenuBarState else { return .none }
+        
+        let oldAppMenuBarState = state.appMenuBarState
 
-        return .run { send in
+        state.appMenuBarState = menuBarState
+
+        return .run { [state] send in
           guard
             let bundleIdentifier = await self.menuBarSettingsManager
               .getBundleIdentifierOfCurrentApp()
@@ -63,8 +67,22 @@ public struct AppFeatureReducer: ReducerProtocol {
 
           await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
 
-          await send(.didSaveAppMenuBarState(menuBarState))
-        } catch: { error, _ in
+          if state.appMenuBarState.rawValue.menuBarVisibleInFullScreen
+            != oldAppMenuBarState.rawValue.menuBarVisibleInFullScreen
+          {
+            await self.notifications.postFullScreenMenuBarVisibilityChanged()
+          }
+
+          if state.appMenuBarState.rawValue.hideMenuBarOnDesktop
+            != oldAppMenuBarState.rawValue.hideMenuBarOnDesktop
+          {
+            await self.notifications.postMenuBarHidingChanged()
+          }
+
+          await self.notifications.postAppMenuBarStateChanged()
+
+        } catch: { error, send in
+          await send(.saveAppMenuBarStateFailed(oldState: oldAppMenuBarState))
           await self.environment.log(error.localizedDescription)
         }
       case let .systemMenuBarStateSelected(menuBarState):
@@ -145,26 +163,9 @@ public struct AppFeatureReducer: ReducerProtocol {
       case let .gotAppMenuBarState(menuBarState):
         state.appMenuBarState = menuBarState
         return .none
-      case let .didSaveAppMenuBarState(menuBarState):
-        let oldAppMenuBarState = state.appMenuBarState
-
+      case let .saveAppMenuBarStateFailed(menuBarState):
         state.appMenuBarState = menuBarState
-
-        return .run { [state] _ in
-          if state.appMenuBarState.rawValue.menuBarVisibleInFullScreen
-            != oldAppMenuBarState.rawValue.menuBarVisibleInFullScreen
-          {
-            await self.notifications.postFullScreenMenuBarVisibilityChanged()
-          }
-
-          if state.appMenuBarState.rawValue.hideMenuBarOnDesktop
-            != oldAppMenuBarState.rawValue.hideMenuBarOnDesktop
-          {
-            await self.notifications.postMenuBarHidingChanged()
-          }
-
-          await self.notifications.postAppMenuBarStateChanged()
-        }
+        return .none
       case let .gotSystemMenuBarState(menuBarState):
         state.systemMenuBarState = menuBarState
 
