@@ -279,11 +279,6 @@ public struct AppFeatureReducer: ReducerProtocol {
                 }
               }
             }
-            group.addTask {
-              for await _ in await self.notifications.applicationShouldTerminateLater() {
-                await send(.applicationTerminated)
-              }
-            }
           }
         }
       case .settingsButtonPressed: return .run { _ in await self.environment.openSettings() }

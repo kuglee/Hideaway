@@ -1,8 +1,8 @@
 import AppFeature
 import ComposableArchitecture
-import Notifications
 import SettingsFeature
 import SwiftUI
+import XCTestDynamicOverlay
 
 public struct AppReducer: ReducerProtocol {
   public init() {}
@@ -42,12 +42,18 @@ public struct AppReducer: ReducerProtocol {
   }
 }
 
-public struct App: SwiftUI.App {
+public struct App: SwiftUI.App, ApplicationDelegateProtocol {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
   let store: StoreOf<AppReducer> = .init(initialState: AppReducer.State(), reducer: AppReducer())
 
-  public init() {}
+  public init() { appDelegate.delegate = self }
+
+  func applicationShouldTerminate() -> NSApplication.TerminateReply {
+    ViewStore(self.store).send(.appFeatureAction(action: .applicationTerminated))
+
+    return .terminateLater
+  }
 
   public var body: some Scene {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
@@ -78,14 +84,13 @@ public struct App: SwiftUI.App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-  @MainActor func applicationShouldTerminate(_ sender: NSApplication)
-    -> NSApplication.TerminateReply
-  {
-    NotificationCenter.default.post(
-      name: NSApplication.applicationShouldTerminateLater,
-      object: nil
-    )
+  var delegate: App!
 
-    return .terminateLater
+  func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+    return self.delegate.applicationShouldTerminate()
   }
+}
+
+protocol ApplicationDelegateProtocol {
+  func applicationShouldTerminate() -> NSApplication.TerminateReply
 }

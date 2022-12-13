@@ -436,7 +436,6 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -476,7 +475,6 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
@@ -513,7 +511,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -552,7 +549,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
@@ -608,7 +604,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -655,7 +650,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -702,7 +696,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -743,7 +736,6 @@ import XCTest
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let notification = Notification(
       name: Notification.Name(""),
@@ -764,8 +756,6 @@ import XCTest
   }
 
   func testQuitButtonPressedNoStates() async {
-    let (applicationDidTerminateLater, applicationShouldTerminateLater) = AsyncStream<Notification>
-      .streamWithContinuation()
     let didTerminate = ActorIsolated(false)
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
@@ -774,32 +764,12 @@ import XCTest
       await didTerminate.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = { [:] }
-    store.dependencies.notifications.applicationShouldTerminateLater = {
-      AsyncStream(applicationDidTerminateLater.map { _ in })
-    }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    //    let task = await store.send(.applicationTerminated)
-    //
-    //    await task.finish()
-
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
-    let task = await store.send(.task)
-
-    applicationShouldTerminateLater.yield(notification)
-
-    await store.receive(.applicationTerminated)
-
-    await task.cancel()
-
-    applicationShouldTerminateLater.yield(notification)
+    await store.send(.applicationTerminated)
 
     await didTerminate.withValue { XCTAssertTrue($0) }
   }
@@ -979,7 +949,6 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
-    store.dependencies.notifications.applicationShouldTerminateLater = { AsyncStream.never }
 
     let task = await store.send(.task)
 
