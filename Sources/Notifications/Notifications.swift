@@ -80,9 +80,9 @@ extension Notifications {
       AsyncStream(
         NotificationCenter.default.notifications(named: NSWindow.willCloseNotification)
           .compactMap {
-            guard let window = $0.object as? NSWindow, await !window.title.isEmpty else {
-              return nil
-            }
+            guard let window = $0.object as? NSWindow,
+                  await window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
+            else { return nil }
 
             return ()
           }
