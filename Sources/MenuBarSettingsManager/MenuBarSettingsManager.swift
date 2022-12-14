@@ -20,6 +20,7 @@ public enum MenuBarSettingsManagerError: Error, LocalizedError, Equatable {
 extension Defaults.Keys {
   public static let menuBarVisibleInFullScreenKey: Self = .init("AppleMenuBarVisibleInFullscreen")
   public static let hideMenuBarOnDesktopKey: Self = .init("_HIHideMenuBar")
+  public static let didRunBefore: Self = .init("didRunBefore")
 }
 
 public let appStatesKey = "AppStates"
@@ -32,6 +33,8 @@ public struct MenuBarSettingsManager {
   public var getBundleIdentifierOfCurrentApp: () async -> String?
   public var getAppMenuBarStates: () async -> [String: String]?
   public var setAppMenuBarStates: ([String: String]) async -> Void
+  public var getDidRunBefore: () -> Bool
+  public var setDidRunBefore: (Bool) async -> Void
 }
 
 extension MenuBarSettingsManager {
@@ -112,6 +115,17 @@ extension MenuBarSettingsManager {
       },
       setAppMenuBarStates: { appStates in
         UserDefaults.standard.setValue(appStates, forKey: appStatesKey)
+      },
+      getDidRunBefore: {
+        (try? Defaults.get(key: .didRunBefore, bundleIdentifier: Bundle.main.bundleIdentifier!))
+          ?? false
+      },
+      setDidRunBefore: { didRunBefore in
+        try! Defaults.set(
+          key: .didRunBefore,
+          value: didRunBefore,
+          bundleIdentifier: Bundle.main.bundleIdentifier!
+        )
       }
     )
   }
@@ -133,6 +147,8 @@ extension MenuBarSettingsManager {
       "\(Self.self).getBundleIdentifierOfCurrentApp"
     ),
     getAppMenuBarStates: XCTUnimplemented("\(Self.self).getAppMenuBarStates", placeholder: nil),
-    setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates")
+    setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates"),
+    getDidRunBefore: XCTUnimplemented("\(Self.self).getDidRunBefore", placeholder: false),
+    setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore")
   )
 }

@@ -16,6 +16,7 @@ let package = Package(
     .library(name: "MenuBarState", targets: ["MenuBarState"]),
     .library(name: "Notification", targets: ["Notifications"]),
     .library(name: "SettingsFeature", targets: ["SettingsFeature"]),
+    .library(name: "WelcomeFeature", targets: ["WelcomeFeature"]),
   ],
   dependencies: [
     .package(
@@ -31,6 +32,7 @@ let package = Package(
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "MenuBarSettingsManager",
         "SettingsFeature",
+        "WelcomeFeature",
       ]
     ),
     .target(
@@ -99,6 +101,20 @@ let package = Package(
         "MenuBarSettingsManager",
         "MenuBarState",
         "Notifications",
+      ]
+    ),
+    .target(
+      name: "WelcomeFeature",
+      dependencies: []
+    ),
+    .testTarget(
+      name: "AppTests",
+      dependencies: [
+        "App",
+        "AppFeature",
+        "SettingsFeature",
+        .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "MenuBarSettingsManager",
       ]
     ),
     .testTarget(

@@ -1,27 +1,39 @@
 import AppFeature
 import ComposableArchitecture
+import MenuBarSettingsManager
 import SettingsFeature
 import SwiftUI
+import WelcomeFeature
 import XCTestDynamicOverlay
 
 public struct AppReducer: ReducerProtocol {
+  @Dependency(\.appEnvironment) var environment
+  @Dependency(\.menuBarSettingsManager.getDidRunBefore) var getDidRunBefore
+  @Dependency(\.menuBarSettingsManager.setDidRunBefore) var setDidRunBefore
+
   public init() {}
 
   public struct State: Equatable {
     public var appFeatureState: AppFeatureReducer.State
     public var settingsFeatureState: SettingsFeatureReducer.State
+    public var didRunBefore: Bool
 
     public init(
       appFeatureState: AppFeatureReducer.State = .init(),
-      settingsFeatureState: SettingsFeatureReducer.State = .init()
+      settingsFeatureState: SettingsFeatureReducer.State = .init(),
+      didRunBefore: Bool = false
     ) {
       self.appFeatureState = appFeatureState
       self.settingsFeatureState = settingsFeatureState
+      self.didRunBefore = didRunBefore
     }
   }
 
   public enum Action: Equatable {
     case appFeatureAction(action: AppFeatureReducer.Action)
+    case dismissWelcomeSheet
+    case onAppear
+    case openSettingsWindow
     case settingsFeatureAction(action: SettingsFeatureReducer.Action)
   }
 
@@ -29,8 +41,20 @@ public struct AppReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case .appFeatureAction(_): return .none
+      case .onAppear:
+        guard !state.didRunBefore else { return .none }
+
+        return .run { send in await send(.openSettingsWindow) }
+      case .openSettingsWindow: return .run { _ in await self.environment.openSettings() }
+      case .dismissWelcomeSheet:
+        state.didRunBefore = true
+
+        return .none
       case .settingsFeatureAction(_): return .none
       }
+    }
+    .onChange(of: \.didRunBefore) { didRunBefore, _, _ in
+      return .run { send in await self.setDidRunBefore(didRunBefore) }
     }
 
     Scope(state: \.appFeatureState, action: /Action.appFeatureAction(action:)) {
@@ -42,12 +66,57 @@ public struct AppReducer: ReducerProtocol {
   }
 }
 
+public enum AppEnvironmentKey: DependencyKey {
+  public static let liveValue = AppEnvironment.live
+  public static let testValue = AppEnvironment.unimplemented
+}
+
+extension DependencyValues {
+  public var appEnvironment: AppEnvironment {
+    get { self[AppEnvironmentKey.self] }
+    set { self[AppEnvironmentKey.self] = newValue }
+  }
+}
+
+public struct AppEnvironment { public var openSettings: () async -> Void }
+
+extension AppEnvironment {
+  public static let live = Self(openSettings: {
+    await NSApplication.shared.setActivationPolicy(.regular)
+
+    let success = await NSApplication.shared.sendAction(
+      Selector(("showSettingsWindow:")),
+      to: nil,
+      from: nil
+    )
+
+    if success {
+      await NSApplication.shared.activate(ignoringOtherApps: true)
+    } else {
+      await NSApplication.shared.setActivationPolicy(.accessory)
+    }
+  })
+}
+
+extension AppEnvironment {
+  public static let unimplemented = Self(
+    openSettings: XCTUnimplemented("\(Self.self).openSettings")
+  )
+}
+
 public struct App: SwiftUI.App, ApplicationDelegateProtocol {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-  let store: StoreOf<AppReducer> = .init(initialState: AppReducer.State(), reducer: AppReducer())
+  let store: StoreOf<AppReducer> = .init(
+    initialState: AppReducer.State(didRunBefore: MenuBarSettingsManager.live.getDidRunBefore()),
+    reducer: AppReducer()
+  )
 
-  public init() { appDelegate.delegate = self }
+  public init() {
+    appDelegate.delegate = self
+
+    ViewStore(self.store).send(.onAppear)
+  }
 
   func applicationShouldTerminate() -> NSApplication.TerminateReply {
     ViewStore(self.store).send(.appFeatureAction(action: .applicationTerminated))
@@ -57,23 +126,32 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
 
   public var body: some Scene {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
-      AppFeatureView(
-        store: self.store.scope(
-          state: \.appFeatureState,
-          action: AppReducer.Action.appFeatureAction
+      WithViewStore(self.store.scope(state: \.didRunBefore)) { viewStore in
+        AppFeatureView(
+          store: self.store.scope(
+            state: \.appFeatureState,
+            action: AppReducer.Action.appFeatureAction
+          )
         )
-      )
+        .disabled(!viewStore.state)
+      }
     }
 
     Settings {
-      SettingsFeatureView(
-        store: self.store.scope(
-          state: \.settingsFeatureState,
-          action: AppReducer.Action.settingsFeatureAction
+      WithViewStore(self.store.scope(state: { !$0.didRunBefore })) { viewStore in
+        SettingsFeatureView(
+          store: self.store.scope(
+            state: \.settingsFeatureState,
+            action: AppReducer.Action.settingsFeatureAction
+          )
         )
-      )
-      .frame(minWidth: 550, maxWidth: 550, minHeight: 450, maxHeight: .infinity, alignment: .top)
-      .onAppear { NSWindow.allowsAutomaticWindowTabbing = false }
+        .frame(minWidth: 550, maxWidth: 550, minHeight: 450, maxHeight: .infinity, alignment: .top)
+        .sheet(isPresented: viewStore.binding(send: .dismissWelcomeSheet)) {
+          WelcomeFeatureView()
+            .background(VisualEffect(material: .windowBackground, blendingMode: .withinWindow))
+        }
+        .onAppear { NSWindow.allowsAutomaticWindowTabbing = false }
+      }
     }
     .windowResizability(.contentSize)
     .commands {
@@ -93,4 +171,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 protocol ApplicationDelegateProtocol {
   func applicationShouldTerminate() -> NSApplication.TerminateReply
+}
+
+// from Isowords: https://github.com/pointfreeco/isowords/blob/9661c88cbf8e6d0bc41b6069f38ff6df29b9c2c4/Sources/TcaHelpers/OnChange.swift
+extension ReducerProtocol {
+  @inlinable public func onChange<ChildState: Equatable>(
+    of toLocalState: @escaping (State) -> ChildState,
+    perform additionalEffects: @escaping (ChildState, inout State, Action) -> Effect<Action, Never>
+  ) -> some ReducerProtocol<State, Action> {
+    self.onChange(of: toLocalState) { additionalEffects($1, &$2, $3) }
+  }
+
+  @inlinable public func onChange<ChildState: Equatable>(
+    of toLocalState: @escaping (State) -> ChildState,
+    perform additionalEffects: @escaping (ChildState, ChildState, inout State, Action) -> Effect<
+      Action, Never
+    >
+  ) -> some ReducerProtocol<State, Action> {
+    ChangeReducer(base: self, toLocalState: toLocalState, perform: additionalEffects)
+  }
+}
+
+@usableFromInline
+struct ChangeReducer<Base: ReducerProtocol, ChildState: Equatable>: ReducerProtocol {
+  @usableFromInline let base: Base
+
+  @usableFromInline let toLocalState: (Base.State) -> ChildState
+
+  @usableFromInline let perform:
+    (ChildState, ChildState, inout Base.State, Base.Action) -> Effect<Base.Action, Never>
+
+  @usableFromInline init(
+    base: Base,
+    toLocalState: @escaping (Base.State) -> ChildState,
+    perform: @escaping (ChildState, ChildState, inout Base.State, Base.Action) -> Effect<
+      Base.Action, Never
+    >
+  ) {
+    self.base = base
+    self.toLocalState = toLocalState
+    self.perform = perform
+  }
+
+  @inlinable public func reduce(into state: inout Base.State, action: Base.Action) -> Effect<
+    Base.Action, Never
+  > {
+    let previousLocalState = self.toLocalState(state)
+    let effects = self.base.reduce(into: &state, action: action)
+    let localState = self.toLocalState(state)
+
+    return previousLocalState != localState
+      ? .merge(effects, self.perform(previousLocalState, localState, &state, action)) : effects
+  }
 }
