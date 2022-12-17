@@ -419,44 +419,31 @@ import XCTest
   }
 
   func testFullScreenMenuBarVisibilityChanged() async {
-    let (fullScreenMenuBarVisibilityChanged, changeFullScreenMenuBarVisibility) = AsyncStream<
-      Notification
-    >
-    .streamWithContinuation()
+    let (fullScreenMenuBarVisibilityChanged, changeFullScreenMenuBarVisibility) = AsyncStream<Void>
+      .streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
-      AsyncStream(
-        fullScreenMenuBarVisibilityChanged.compactMap {
-          ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
-        }
-      )
+      AsyncStream(fullScreenMenuBarVisibilityChanged.compactMap { nil })
     }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    changeFullScreenMenuBarVisibility.yield(notification)
+    changeFullScreenMenuBarVisibility.yield()
 
     await task.cancel()
 
-    changeFullScreenMenuBarVisibility.yield(notification)
+    changeFullScreenMenuBarVisibility.yield()
   }
 
   func testFullScreenMenuBarVisibilityChangedFromOutside() async {
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
-    let (fullScreenMenuBarVisibilityChanged, changeFullScreenMenuBarVisibility) = AsyncStream<
-      Notification
-    >
-    .streamWithContinuation()
+    let (fullScreenMenuBarVisibilityChanged, changeFullScreenMenuBarVisibility) = AsyncStream<Void>
+      .streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
@@ -466,11 +453,7 @@ import XCTest
       return "com.example.App1"
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = {
-      AsyncStream(
-        fullScreenMenuBarVisibilityChanged.compactMap {
-          ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
-        }
-      )
+      AsyncStream(fullScreenMenuBarVisibilityChanged.map { _ in })
     }
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
@@ -478,11 +461,9 @@ import XCTest
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
-    let notification = Notification(name: .init(""))
-
     let task = await store.send(.task)
 
-    changeFullScreenMenuBarVisibility.yield(notification)
+    changeFullScreenMenuBarVisibility.yield()
 
     await store.receive(.fullScreenMenuBarVisibilityChangedNotification)
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
@@ -492,45 +473,34 @@ import XCTest
 
     await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
-    changeFullScreenMenuBarVisibility.yield(notification)
+    changeFullScreenMenuBarVisibility.yield()
   }
 
   func testMenuBarHidingChanged() async {
-    let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.menuBarHidingChanged = {
-      AsyncStream(
-        menuBarHidingChanged.compactMap {
-          ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
-        }
-      )
+      AsyncStream(menuBarHidingChanged.compactMap { nil })
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    changeMenuBarHiding.yield(notification)
+    changeMenuBarHiding.yield()
 
     await task.cancel()
 
-    changeMenuBarHiding.yield(notification)
+    changeMenuBarHiding.yield()
   }
 
   func testMenuBarHidingChangedFromOutside() async {
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
 
-    let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (menuBarHidingChanged, changeMenuBarHiding) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
@@ -540,11 +510,7 @@ import XCTest
       return "com.example.App1"
     }
     store.dependencies.notifications.menuBarHidingChanged = {
-      AsyncStream(
-        menuBarHidingChanged.compactMap {
-          ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
-        }
-      )
+      AsyncStream(menuBarHidingChanged.map { _ in })
     }
     store.dependencies.notifications.fullScreenMenuBarVisibilityChanged = { AsyncStream.never }
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
@@ -552,11 +518,9 @@ import XCTest
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
 
-    let notification = Notification(name: .init(""))
-
     let task = await store.send(.task)
 
-    changeMenuBarHiding.yield(notification)
+    changeMenuBarHiding.yield()
 
     await store.receive(.menuBarHidingChangedNotification)
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
@@ -566,7 +530,7 @@ import XCTest
 
     await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
-    changeMenuBarHiding.yield(notification)
+    changeMenuBarHiding.yield()
   }
 
   func testDidActivateApplicationStateDoesNotEqualSavedState() async {
@@ -575,8 +539,7 @@ import XCTest
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
 
-    let (didActivateApplication, activateApplication) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
@@ -605,14 +568,9 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
 
     await store.receive(.didActivateApplication)
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
@@ -624,14 +582,13 @@ import XCTest
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
   }
 
   func testDidActivateApplicationStateEqualsSavedStateButDoesNotEqualAppMenuBarState() async {
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
 
-    let (didActivateApplication, activateApplication) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
@@ -651,14 +608,9 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
 
     await store.receive(.didActivateApplication)
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
@@ -667,14 +619,13 @@ import XCTest
 
     await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
   }
 
   func testDidActivateApplicationStateEqualsSavedStateAndAppMenuBarState() async {
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
 
-    let (didActivateApplication, activateApplication) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(
       initialState: AppFeatureReducer.State(appMenuBarState: .never),
@@ -697,14 +648,9 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
 
     await store.receive(.didActivateApplication)
 
@@ -712,14 +658,13 @@ import XCTest
 
     await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
   }
 
   func testDidActivateApplicationNoSavedStates() async {
     let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
 
-    let (didActivateApplication, activateApplication) = AsyncStream<Notification>
-      .streamWithContinuation()
+    let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
@@ -737,14 +682,9 @@ import XCTest
     store.dependencies.notifications.menuBarHidingChanged = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
 
     await store.receive(.didActivateApplication)
 
@@ -752,7 +692,7 @@ import XCTest
 
     await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
-    activateApplication.yield(notification)
+    activateApplication.yield()
   }
 
   func testQuitButtonPressedNoStates() async {

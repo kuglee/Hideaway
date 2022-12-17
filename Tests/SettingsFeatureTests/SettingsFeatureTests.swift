@@ -7,9 +7,8 @@ import XCTest
 
 @MainActor final class SettingsFeatureTests: XCTestCase {
   func testTask() async {
-    let (appMenuBarStateChanged, changeAppMenuBarState) = AsyncStream<Notification>
-      .streamWithContinuation()
-    let (settingsWindowWillCloseFinished, settingsWindowWillClose) = AsyncStream<Notification>
+    let (appMenuBarStateChanged, changeAppMenuBarState) = AsyncStream<Void>.streamWithContinuation()
+    let (settingsWindowWillCloseFinished, settingsWindowWillClose) = AsyncStream<Void>
       .streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
 
@@ -25,11 +24,7 @@ import XCTest
       ]
     }
     store.dependencies.notifications.appMenuBarStateChanged = {
-      AsyncStream(
-        appMenuBarStateChanged.compactMap {
-          ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : ()
-        }
-      )
+      AsyncStream(appMenuBarStateChanged.compactMap { nil })
     }
     store.dependencies.notifications.settingsWindowWillClose = {
       AsyncStream(settingsWindowWillCloseFinished.map { _ in })
@@ -39,14 +34,9 @@ import XCTest
     }
     store.dependencies.uuid = .incrementing
 
-    let notification = Notification(
-      name: Notification.Name(""),
-      object: Bundle.main.bundleIdentifier
-    )
-
     let task = await store.send(.task)
 
-    changeAppMenuBarState.yield(notification)
+    changeAppMenuBarState.yield()
 
     await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"])) {
       $0.appList = AppListReducer.State(
@@ -63,13 +53,13 @@ import XCTest
       )
     }
 
-    settingsWindowWillClose.yield(notification)
+    settingsWindowWillClose.yield()
     await store.receive(.settingsWindowWillClose)
     await didSetAccessoryActivationPolicy.withValue { XCTAssertTrue($0) }
 
     await task.cancel()
 
-    changeAppMenuBarState.yield(notification)
-    settingsWindowWillClose.yield(notification)
+    changeAppMenuBarState.yield()
+    settingsWindowWillClose.yield()
   }
 }

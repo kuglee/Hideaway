@@ -35,38 +35,38 @@ extension Notifications {
         object: Bundle.main.bundleIdentifier
       )
     },
-    fullScreenMenuBarVisibilityChanged: { @MainActor in
-      AsyncStream(
+    fullScreenMenuBarVisibilityChanged: {
+      AsyncStream {
         DistributedNotificationCenter.default()
           .notifications(named: .AppleInterfaceFullScreenMenuBarVisibilityChangedNotification)
           .compactMap { ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : () }
-      )
+      }
     },
-    menuBarHidingChanged: { @MainActor in
-      AsyncStream(
+    menuBarHidingChanged: {
+      AsyncStream {
         DistributedNotificationCenter.default()
           .notifications(named: .AppleInterfaceMenuBarHidingChangedNotification)
           .compactMap { ($0.object as? String) == Bundle.main.bundleIdentifier ? nil : () }
-      )
+      }
     },
-    appMenuBarStateChanged: { @MainActor in
-      AsyncStream(
+    appMenuBarStateChanged: {
+      AsyncStream {
         NotificationCenter.default
           .notifications(
             named:
               .AppleInterfaceFullScreenMenuBarVisibilityOrMenuBarHidingHidingChangedNotification
           )
           .map { _ in }
-      )
+      }
     },
-    didActivateApplication: { @MainActor in
-      AsyncStream(
+    didActivateApplication: {
+      AsyncStream {
         NSWorkspace.shared.notificationCenter
           .notifications(named: NSWorkspace.didActivateApplicationNotification).map { _ in }
-      )
+      }
     },
-    didTerminateApplication: { @MainActor in
-      AsyncStream(
+    didTerminateApplication: {
+      AsyncStream {
         NSWorkspace.shared.notificationCenter
           .notifications(named: NSWorkspace.didTerminateApplicationNotification)
           .map {
@@ -74,19 +74,19 @@ extension Notifications {
 
             return app?.bundleIdentifier
           }
-      )
+      }
     },
-    settingsWindowWillClose: { @MainActor in
-      AsyncStream(
-        NotificationCenter.default.notifications(named: NSWindow.willCloseNotification)
+    settingsWindowWillClose: {
+      AsyncStream {
+        await NotificationCenter.default.notifications(named: NSWindow.willCloseNotification)
           .compactMap {
             guard let window = $0.object as? NSWindow,
-                  await window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
+              await window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
             else { return nil }
 
             return ()
           }
-      )
+      }
     }
   )
 }
@@ -125,9 +125,6 @@ extension Notifications {
   )
 }
 
-extension Notification: @unchecked Sendable {}
-extension NotificationCenter.Notifications: @unchecked Sendable {}
-
 extension Notification.Name {
   public static var AppleInterfaceFullScreenMenuBarVisibilityChangedNotification: Notification.Name
   { Self.init("AppleInterfaceFullScreenMenuBarVisibilityChangedNotification") }
@@ -145,5 +142,28 @@ extension Notification.Name {
 extension NSApplication {
   public static var applicationShouldTerminateLater: Notification.Name {
     Notification.Name("applicationShouldTerminateLater")
+  }
+}
+
+// Conformance of 'Notification' to 'Sendable' is unavailable
+// (from https://github.com/pointfreeco/swift-composable-architecture/discussions/1727)
+extension AsyncStream {
+  public init<S: AsyncSequence>(
+    bufferingPolicy limit: Continuation.BufferingPolicy = .unbounded,
+    @_implicitSelfCapture @_inheritActorContext _ makeUnderlyingSequence: @escaping @Sendable ()
+      async -> S
+  ) where S.Element == Element {
+    self.init(bufferingPolicy: limit) { (continuation: Continuation) in
+      let task = Task {
+        do {
+          for try await element in await makeUnderlyingSequence() { continuation.yield(element) }
+        } catch {}
+        continuation.finish()
+      }
+      continuation.onTermination =
+        { _ in task.cancel() }
+        // NB: This explicit cast is needed to work around a compiler bug in Swift 5.5.2
+        as @Sendable (Continuation.Termination) -> Void
+    }
   }
 }
