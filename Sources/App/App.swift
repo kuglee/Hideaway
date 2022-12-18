@@ -1,6 +1,7 @@
 import AppFeature
 import ComposableArchitecture
 import MenuBarSettingsManager
+import Notifications
 import SettingsFeature
 import SwiftUI
 import WelcomeFeature
@@ -8,8 +9,14 @@ import XCTestDynamicOverlay
 
 public struct AppReducer: ReducerProtocol {
   @Dependency(\.appEnvironment) var environment
+  @Dependency(\.menuBarSettingsManager.getAppMenuBarState) var getAppMenuBarState
+  @Dependency(\.menuBarSettingsManager.setAppMenuBarState) var setAppMenuBarState
+  @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.getDidRunBefore) var getDidRunBefore
   @Dependency(\.menuBarSettingsManager.setDidRunBefore) var setDidRunBefore
+  @Dependency(\.notifications.postFullScreenMenuBarVisibilityChanged)
+  var postFullScreenMenuBarVisibilityChanged
+  @Dependency(\.notifications.postMenuBarHidingChanged) var postMenuBarHidingChanged
 
   public init() {}
 
@@ -31,6 +38,7 @@ public struct AppReducer: ReducerProtocol {
 
   public enum Action: Equatable {
     case appFeatureAction(action: AppFeatureReducer.Action)
+    case applicationTerminated
     case dismissWelcomeSheet
     case onAppear
     case openSettingsWindow
@@ -41,6 +49,29 @@ public struct AppReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case .appFeatureAction(_): return .none
+      case .applicationTerminated:
+        return .run { _ in
+          if let appStates = await self.getAppMenuBarStates() {
+            var didSetState = false
+            for bundleIdentifier in appStates.keys {
+              let currentState = try await self.getAppMenuBarState(bundleIdentifier)
+
+              if currentState != .systemDefault {
+                try await self.setAppMenuBarState(.systemDefault, bundleIdentifier)
+
+                if !didSetState { didSetState = true }
+              }
+            }
+
+            if didSetState {
+              await self.postFullScreenMenuBarVisibilityChanged()
+              await self.postMenuBarHidingChanged()
+            }
+          }
+
+          await self.environment.applicationShouldTerminate()
+        }
+
       case .onAppear:
         guard !state.didRunBefore else { return .none }
 
@@ -66,6 +97,18 @@ public struct AppReducer: ReducerProtocol {
   }
 }
 
+public enum NotificationsManagerKey: DependencyKey {
+  public static let liveValue = Notifications.live
+  public static let testValue = Notifications.unimplemented
+}
+
+extension DependencyValues {
+  public var notifications: Notifications {
+    get { self[NotificationsManagerKey.self] }
+    set { self[NotificationsManagerKey.self] = newValue }
+  }
+}
+
 public enum AppEnvironmentKey: DependencyKey {
   public static let liveValue = AppEnvironment.live
   public static let testValue = AppEnvironment.unimplemented
@@ -78,28 +121,37 @@ extension DependencyValues {
   }
 }
 
-public struct AppEnvironment { public var openSettings: () async -> Void }
+public struct AppEnvironment {
+  public var applicationShouldTerminate: () async -> Void
+  public var openSettings: () async -> Void
+}
 
 extension AppEnvironment {
-  public static let live = Self(openSettings: {
-    await NSApplication.shared.setActivationPolicy(.regular)
+  public static let live = Self(
+    applicationShouldTerminate: {
+      await NSApplication.shared.reply(toApplicationShouldTerminate: true)
+    },
+    openSettings: {
+      await NSApplication.shared.setActivationPolicy(.regular)
 
-    let success = await NSApplication.shared.sendAction(
-      Selector(("showSettingsWindow:")),
-      to: nil,
-      from: nil
-    )
+      let success = await NSApplication.shared.sendAction(
+        Selector(("showSettingsWindow:")),
+        to: nil,
+        from: nil
+      )
 
-    if success {
-      await NSApplication.shared.activate(ignoringOtherApps: true)
-    } else {
-      await NSApplication.shared.setActivationPolicy(.accessory)
+      if success {
+        await NSApplication.shared.activate(ignoringOtherApps: true)
+      } else {
+        await NSApplication.shared.setActivationPolicy(.accessory)
+      }
     }
-  })
+  )
 }
 
 extension AppEnvironment {
   public static let unimplemented = Self(
+    applicationShouldTerminate: XCTUnimplemented("\(Self.self).applicationShouldTerminate"),
     openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
@@ -119,7 +171,7 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
   }
 
   func applicationShouldTerminate() -> NSApplication.TerminateReply {
-    ViewStore(self.store).send(.appFeatureAction(action: .applicationTerminated))
+    ViewStore(self.store).send(.applicationTerminated)
 
     return .terminateLater
   }

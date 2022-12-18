@@ -31,6 +31,7 @@ let package = Package(
         "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "MenuBarSettingsManager",
+        "Notifications",
         "SettingsFeature",
         "WelcomeFeature",
       ]
@@ -111,10 +112,9 @@ let package = Package(
       name: "AppTests",
       dependencies: [
         "App",
-        "AppFeature",
-        "SettingsFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "MenuBarSettingsManager",
+        "MenuBarState",
+        "Notifications",
       ]
     ),
     .testTarget(

@@ -32,7 +32,6 @@ public struct AppFeatureReducer: ReducerProtocol {
     case saveAppMenuBarStateFailed(oldState: MenuBarState)
     case systemMenuBarStateSelected(state: SystemMenuBarState)
     case gotSystemMenuBarState(SystemMenuBarState)
-    case applicationTerminated
     case fullScreenMenuBarVisibilityChangedNotification
     case menuBarHidingChangedNotification
     case didActivateApplication
@@ -47,7 +46,7 @@ public struct AppFeatureReducer: ReducerProtocol {
       switch action {
       case let .appMenuBarStateSelected(menuBarState):
         guard menuBarState != state.appMenuBarState else { return .none }
-        
+
         let oldAppMenuBarState = state.appMenuBarState
 
         state.appMenuBarState = menuBarState
@@ -106,33 +105,6 @@ public struct AppFeatureReducer: ReducerProtocol {
           {
             await self.notifications.postMenuBarHidingChanged()
           }
-        }
-      case .applicationTerminated:
-        return .run { _ in
-          if let appStates = await self.menuBarSettingsManager.getAppMenuBarStates() {
-            var didSetState = false
-            for bundleIdentifier in appStates.keys {
-              let currentState = try await self.menuBarSettingsManager.getAppMenuBarState(
-                bundleIdentifier
-              )
-
-              if currentState != .systemDefault {
-                try await self.menuBarSettingsManager.setAppMenuBarState(
-                  .systemDefault,
-                  bundleIdentifier
-                )
-
-                if !didSetState { didSetState = true }
-              }
-            }
-
-            if didSetState {
-              await self.notifications.postFullScreenMenuBarVisibilityChanged()
-              await self.notifications.postMenuBarHidingChanged()
-            }
-          }
-
-          await self.environment.applicationShouldTerminate()
         }
       case .fullScreenMenuBarVisibilityChangedNotification:
         return .run { send in
@@ -325,16 +297,12 @@ extension DependencyValues {
 
 public struct AppFeatureEnvironment {
   public var log: (String) async -> Void
-  public var applicationShouldTerminate: () async -> Void
   public var openSettings: () async -> Void
 }
 
 extension AppFeatureEnvironment {
   public static let live = Self(
     log: { message in os_log("%{public}@", message) },
-    applicationShouldTerminate: {
-      await NSApplication.shared.reply(toApplicationShouldTerminate: true)
-    },
     openSettings: {
       await NSApplication.shared.setActivationPolicy(.regular)
 
@@ -356,7 +324,6 @@ extension AppFeatureEnvironment {
 extension AppFeatureEnvironment {
   public static let unimplemented = Self(
     log: XCTUnimplemented("\(Self.self).log"),
-    applicationShouldTerminate: XCTUnimplemented("\(Self.self).applicationShouldTerminate"),
     openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
