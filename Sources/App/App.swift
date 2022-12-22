@@ -1,6 +1,7 @@
 import AppFeature
 import ComposableArchitecture
 import MenuBarSettingsManager
+import MenuBarState
 import Notifications
 import SettingsFeature
 import SwiftUI
@@ -53,13 +54,18 @@ public struct AppReducer: ReducerProtocol {
         return .run { _ in
           if let appStates = await self.getAppMenuBarStates() {
             var didSetState = false
-            for bundleIdentifier in appStates.keys {
-              let currentState = try await self.getAppMenuBarState(bundleIdentifier)
 
-              if currentState != .systemDefault {
-                try await self.setAppMenuBarState(.systemDefault, bundleIdentifier)
+            await withThrowingTaskGroup(of: Void.self) { group in
+              for bundleIdentifier in appStates.keys {
+                if let savedState = appStates[bundleIdentifier],
+                  savedState != MenuBarState.systemDefault.stringValue
+                {
+                  if !didSetState { didSetState = true }
 
-                if !didSetState { didSetState = true }
+                  group.addTask {
+                    try await self.setAppMenuBarState(.systemDefault, bundleIdentifier)
+                  }
+                }
               }
             }
 
