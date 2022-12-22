@@ -18,7 +18,6 @@
 		5D935E4D28AC2BD900B7C9C9 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		5D935E5128AC2BDA00B7C9C9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5D935E5628AC2BDA00B7C9C9 /* Hideaway.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Hideaway.entitlements; sourceTree = "<group>"; };
-		5D935E5C28AC2C2300B7C9C9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +60,6 @@
 		5D935E4C28AC2BD900B7C9C9 /* Application */ = {
 			isa = PBXGroup;
 			children = (
-				5D935E5C28AC2C2300B7C9C9 /* Info.plist */,
 				5D935E4D28AC2BD900B7C9C9 /* App.swift */,
 				5D935E5128AC2BDA00B7C9C9 /* Assets.xcassets */,
 				5D935E5628AC2BDA00B7C9C9 /* Hideaway.entitlements */,
@@ -281,7 +279,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Application/Info.plist;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -312,7 +310,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Application/Info.plist;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
