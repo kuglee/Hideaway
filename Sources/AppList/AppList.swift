@@ -31,13 +31,13 @@ public struct AppListReducer: ReducerProtocol {
       var appDisplayNames = [String: String]()
 
       for item in self.appListItems {
-        let appBundleURL = NSWorkspace.shared.urlForApplication(
-          withBundleIdentifier: item.menuBarSaveState.bundleIdentifier
-        )!
+        guard
+          let appBundleURL = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: item.menuBarSaveState.bundleIdentifier
+          ), let appBundle = Bundle.init(url: appBundleURL)
+        else { continue }
 
-        let appDisplayName = Bundle.init(url: appBundleURL)!.displayName
-
-        appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appDisplayName
+        appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appBundle.displayName
       }
 
       return IdentifiedArray(

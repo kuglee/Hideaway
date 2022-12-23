@@ -54,11 +54,13 @@ public struct SettingsFeatureReducer: ReducerProtocol {
         state.appList.appListItems = []
 
         for (bundleIdentifier, stringState) in appListItems {
-          let menuBarState = MenuBarState.init(string: stringState)
+          // filter apps that don't exist
+          guard let _ = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+          else { continue }
 
           let appMenuBarSaveState = AppMenuBarSaveState(
             bundleIdentifier: bundleIdentifier,
-            state: menuBarState
+            state: MenuBarState.init(string: stringState)
           )
 
           state.appList.appListItems.append(

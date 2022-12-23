@@ -170,7 +170,8 @@ public struct AppListItemView: View {
 }
 
 func getAppName(bundleIdentifier: String) -> String {
-  let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)!
+  guard let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+  else { return "N/A" }
 
   return Bundle.init(url: bundleURL)!.displayName
 }
@@ -192,7 +193,8 @@ extension Bundle {
 }
 
 func getAppIcon(bundleIdentifier: String) -> NSImage {
-  let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)!
+  guard let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+  else { return NSImage() }
 
   return NSWorkspace.shared.icon(forFile: bundleURL.relativePath)
 }
