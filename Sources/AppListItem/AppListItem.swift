@@ -171,7 +171,24 @@ public struct AppListItemView: View {
 
 func getAppName(bundleIdentifier: String) -> String {
   let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)!
-  return String(bundleURL.lastPathComponent.dropLast(4))
+
+  return Bundle.init(url: bundleURL)!.displayName
+}
+
+extension Bundle {
+  public var displayName: String {
+    let bundleName =
+      (self.localizedInfoDictionary?["CFBundleDisplayName"]
+        ?? self.localizedInfoDictionary?["CFBundleName"]
+        ?? self.infoDictionary?["CFBundleDisplayName"] ?? self.infoDictionary?["CFBundleName"])
+      as? String
+
+    if let bundleName { return bundleName }
+
+    let fileName = self.bundleURL.lastPathComponent
+
+    return String(fileName.prefix(upTo: fileName.lastIndex { $0 == "." } ?? fileName.endIndex))
+  }
 }
 
 func getAppIcon(bundleIdentifier: String) -> NSImage {

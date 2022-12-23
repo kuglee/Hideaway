@@ -28,24 +28,26 @@ public struct AppListReducer: ReducerProtocol {
     }
 
     var sortedAppListItems: IdentifiedArrayOf<AppListItemReducer.State> {
-      var appNames = [String: String]()
+      var appDisplayNames = [String: String]()
 
       for item in self.appListItems {
-        let appName = NSWorkspace.shared.urlForApplication(
+        let appBundleURL = NSWorkspace.shared.urlForApplication(
           withBundleIdentifier: item.menuBarSaveState.bundleIdentifier
-        )?
-        .lastPathComponent.lowercased()
+        )!
 
-        appNames[item.menuBarSaveState.bundleIdentifier] = appName
+        let appDisplayName = Bundle.init(url: appBundleURL)!.displayName
+
+        appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appDisplayName
       }
 
       return IdentifiedArray(
         uniqueElements: self.appListItems.sorted { lhs, rhs in
-          guard let lhsAppName = appNames[lhs.menuBarSaveState.bundleIdentifier],
-            let rhsAppName = appNames[rhs.menuBarSaveState.bundleIdentifier]
+          guard let lhsAppDisplayName = appDisplayNames[lhs.menuBarSaveState.bundleIdentifier],
+            let rhsAppDisplayName = appDisplayNames[rhs.menuBarSaveState.bundleIdentifier]
           else { return true }
 
-          return lhsAppName < rhsAppName
+          return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
+            == .orderedAscending
         }
       )
     }
