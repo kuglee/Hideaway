@@ -58,8 +58,6 @@ public struct AppListReducer: ReducerProtocol {
     case appImported(bundleIdentifier: String)
     case binding(BindingAction<State>)
     case appListItem(id: AppListItemReducer.State.ID, action: AppListItemReducer.Action)
-    case didRemoveAppMenuBarStates(ids: Set<UUID>)
-    case didSaveAppMenuBarState(AppMenuBarSaveState)
     case removeButtonPressed
   }
 
@@ -73,58 +71,27 @@ public struct AppListReducer: ReducerProtocol {
 
         return .none
       case let .appImported(bundleIdentifier):
-        guard
-          !(state.appListItems.map { $0.menuBarSaveState.bundleIdentifier }
-            .contains(bundleIdentifier))
-        else { return .none }
+        if !(state.appListItems.map { $0.menuBarSaveState.bundleIdentifier }
+          .contains(bundleIdentifier))
+        {
+          let appMenuBarSaveState = AppMenuBarSaveState(bundleIdentifier: bundleIdentifier)
 
-        return .run { send in
-          let menuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
-            bundleIdentifier
+          state.appListItems.append(
+            AppListItemReducer.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
           )
-
-          var appStates: [String: String] =
-            await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
-
-          appStates[bundleIdentifier] = menuBarState.stringValue
-
-          await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
-
-          let appMenuBarSaveState = AppMenuBarSaveState(
-            bundleIdentifier: bundleIdentifier,
-            state: menuBarState
-          )
-
-          await send(.didSaveAppMenuBarState(appMenuBarSaveState))
         }
+
+        return .none
       case .appListItem(id: _, action: _): return .none
       case .binding(_): return .none
-      case let .didRemoveAppMenuBarStates(ids):
-        for id in ids { state.appListItems.remove(id: id) }
+      case .removeButtonPressed:
+        if !state.selectedItemIDs.isEmpty {
+          for id in state.selectedItemIDs { state.appListItems.remove(id: id) }
+        }
 
         state.selectedItemIDs = []
 
         return .none
-      case let .didSaveAppMenuBarState(appMenuBarSaveState):
-        state.appListItems.append(
-          AppListItemReducer.State(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
-        )
-
-        return .none
-      case .removeButtonPressed:
-        return .run { [state] send in guard !state.selectedItemIDs.isEmpty else { return }
-
-          var appStates: [String: String] =
-            await self.menuBarSettingsManager.getAppMenuBarStates() ?? .init()
-
-          for selectedItemID in state.selectedItemIDs {
-            let selectedItem = state.appListItems[id: selectedItemID]!
-            appStates.removeValue(forKey: selectedItem.menuBarSaveState.bundleIdentifier)
-          }
-
-          await self.menuBarSettingsManager.setAppMenuBarStates(appStates)
-          await send(.didRemoveAppMenuBarStates(ids: state.selectedItemIDs))
-        }
       }
     }
     .forEach(\State.appListItems, action: /Action.appListItem(id:action:)) { AppListItemReducer() }

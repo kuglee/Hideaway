@@ -1,5 +1,4 @@
 import ComposableArchitecture
-import MenuBarSettingsManager
 import MenuBarState
 import XCTest
 
@@ -14,8 +13,6 @@ import XCTest
 
   func testAppImportEmpty() async {
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-    let didGetAppMenuBarStates = ActorIsolated(false)
-    let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppListReducer.State(appListItems: []),
@@ -23,36 +20,20 @@ import XCTest
     )
 
     store.dependencies.uuid = UUIDGenerator { id }
-    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      await didGetAppMenuBarStates.setValue(true)
-
-      return nil
-    }
-    store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
-      await didSetAppMenuBarStates.setValue(true)
-    }
-    store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
-    await store.send(.appImported(bundleIdentifier: "com.example.App1"))
-
-    await store.receive(.didSaveAppMenuBarState(.init(bundleIdentifier: "com.example.App1"))) {
+    await store.send(.appImported(bundleIdentifier: "com.example.App1")) {
       $0.appListItems = .init(uniqueElements: [
         .init(menuBarSaveState: .init(bundleIdentifier: "com.example.App1"), id: id)
       ])
     }
 
     await task.finish()
-
-    await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
-    await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
 
   func testAppImportNotAlreadyImported() async {
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-    let didGetAppMenuBarStates = ActorIsolated(false)
-    let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppListReducer.State(
@@ -67,21 +48,10 @@ import XCTest
     )
 
     store.dependencies.uuid = UUIDGenerator { id }
-    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      await didGetAppMenuBarStates.setValue(true)
-
-      return nil
-    }
-    store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
-      await didSetAppMenuBarStates.setValue(true)
-    }
-    store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
-    await store.send(.appImported(bundleIdentifier: "com.example.App2"))
-
-    await store.receive(.didSaveAppMenuBarState(.init(bundleIdentifier: "com.example.App2"))) {
+    await store.send(.appImported(bundleIdentifier: "com.example.App2")) {
       $0.appListItems = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
@@ -91,9 +61,6 @@ import XCTest
     }
 
     await task.finish()
-
-    await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
-    await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
 
   func testAppImportAlreadyImported() async {
@@ -142,8 +109,6 @@ import XCTest
   func testRemoveButtonPressedWithMultipleElementsSelected() async {
     let id2 = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
     let id3 = UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
-    let didGetAppMenuBarStates = ActorIsolated(false)
-    let didSetAppMenuBarStates = ActorIsolated(false)
 
     let store = TestStore(
       initialState: AppListReducer.State(
@@ -159,18 +124,7 @@ import XCTest
       reducer: AppListReducer()
     )
 
-    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
-      await didGetAppMenuBarStates.setValue(true)
-
-      return nil
-    }
-    store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
-      await didSetAppMenuBarStates.setValue(true)
-    }
-
-    let task = await store.send(.removeButtonPressed)
-
-    await store.receive(.didRemoveAppMenuBarStates(ids: [id2, id3])) {
+    let task = await store.send(.removeButtonPressed) {
       $0.appListItems = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
@@ -182,9 +136,6 @@ import XCTest
     }
 
     await task.finish()
-
-    await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
-    await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
 
   func testSelectedItemsBinding() async {

@@ -58,6 +58,7 @@ let package = Package(
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "AppListItem",
         "AppMenuBarSaveState",
+        "MenuBarSettingsManager",
       ]
     ),
     .target(
@@ -65,9 +66,7 @@ let package = Package(
       dependencies: [
         "AppMenuBarSaveState",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "MenuBarSettingsManager",
         "MenuBarState",
-        "Notifications",
       ]
     ),
     .target(
@@ -96,7 +95,6 @@ let package = Package(
       name: "SettingsFeature",
       dependencies: [
         "AppList",
-        "AppListItem",
         "AppMenuBarSaveState",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "MenuBarSettingsManager",
@@ -130,11 +128,8 @@ let package = Package(
       name: "AppListItemTests",
       dependencies: [
         "AppListItem",
-        "AppMenuBarSaveState",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-        "MenuBarSettingsManager",
         "MenuBarState",
-        "Notifications",
       ]
     ),
     .testTarget(
@@ -142,6 +137,7 @@ let package = Package(
       dependencies: [
         "AppList",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "MenuBarSettingsManager",
       ]
     ),
     .testTarget(
