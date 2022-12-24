@@ -13,6 +13,7 @@ public struct Notifications {
   public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
   public var didTerminateApplication: @Sendable () async -> AsyncStream<String?>
   public var settingsWindowWillClose: @Sendable () async -> AsyncStream<Void>
+  public var settingsWindowDidBecomeMain: @Sendable () async -> AsyncStream<Void>
 }
 
 extension Notifications {
@@ -87,6 +88,18 @@ extension Notifications {
             return ()
           }
       }
+    },
+    settingsWindowDidBecomeMain: {
+      AsyncStream {
+        await NotificationCenter.default.notifications(named: NSWindow.didBecomeMainNotification)
+          .compactMap {
+            guard let window = $0.object as? NSWindow,
+              await window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
+            else { return nil }
+
+            return ()
+          }
+      }
     }
   )
 }
@@ -120,6 +133,10 @@ extension Notifications {
     ),
     settingsWindowWillClose: XCTUnimplemented(
       "\(Self.self).settingsWindowWillClose",
+      placeholder: AsyncStream.never
+    ),
+    settingsWindowDidBecomeMain: XCTUnimplemented(
+      "\(Self.self).settingsWindowDidBecomeMain",
       placeholder: AsyncStream.never
     )
   )

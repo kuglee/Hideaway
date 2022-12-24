@@ -11,6 +11,7 @@ import os.log
 public struct SettingsFeatureReducer: ReducerProtocol {
   @Dependency(\.settingsFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
+  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.notifications) var notifications
   @Dependency(\.uuid) var uuid
 
@@ -39,12 +40,21 @@ public struct SettingsFeatureReducer: ReducerProtocol {
               var appMenuBarStateChanged = await self.notifications.appMenuBarStateChanged()
                 .makeAsyncIterator()
               repeat {
-                await send(.gotAppList(self.getAppMenuBarStates() ?? .init()))
+                guard let appMenuBarStates = await self.getAppMenuBarStates() else { continue }
+
+                await send(.gotAppList(appMenuBarStates))
               } while await appMenuBarStateChanged.next() != nil
             }
             group.addTask {
               for await _ in await self.notifications.settingsWindowWillClose() {
                 await send(.settingsWindowWillClose)
+              }
+            }
+            group.addTask {
+              for await _ in await self.notifications.settingsWindowDidBecomeMain() {
+                guard let appMenuBarStates = await self.getAppMenuBarStates() else { continue }
+
+                await send(.gotAppList(appMenuBarStates))
               }
             }
           }
@@ -55,8 +65,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
 
         for (bundleIdentifier, stringState) in appListItems {
           // filter apps that don't exist
-          guard let _ = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
-          else { continue }
+          guard let _ = self.getUrlForApplication(bundleIdentifier) else { continue }
 
           let appMenuBarSaveState = AppMenuBarSaveState(
             bundleIdentifier: bundleIdentifier,

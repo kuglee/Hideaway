@@ -35,6 +35,7 @@ public struct MenuBarSettingsManager {
   public var setAppMenuBarStates: ([String: String]) async -> Void
   public var getDidRunBefore: () -> Bool
   public var setDidRunBefore: (Bool) async -> Void
+  public var getUrlForApplication: (String) -> URL?
 }
 
 extension MenuBarSettingsManager {
@@ -126,6 +127,9 @@ extension MenuBarSettingsManager {
           value: didRunBefore,
           bundleIdentifier: Bundle.main.bundleIdentifier!
         )
+      },
+      getUrlForApplication: { bundleIdentifier in
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
       }
     )
   }
@@ -149,6 +153,7 @@ extension MenuBarSettingsManager {
     getAppMenuBarStates: XCTUnimplemented("\(Self.self).getAppMenuBarStates", placeholder: nil),
     setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates"),
     getDidRunBefore: XCTUnimplemented("\(Self.self).getDidRunBefore", placeholder: false),
-    setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore")
+    setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore"),
+    getUrlForApplication: XCTUnimplemented("\(Self.self).getUrlForApplication")
   )
 }
