@@ -1,4 +1,5 @@
 import AppList
+import AppListItem
 import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
@@ -13,6 +14,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.setAppMenuBarStates) var setAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
+  @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
   @Dependency(\.notifications) var notifications
   @Dependency(\.uuid) var uuid
 
@@ -64,7 +66,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
       case let .gotAppList(appListItems):
         state.appList.appListItems = []
 
-        for (bundleIdentifier, stringState) in appListItems {
+        for (bundleIdentifier, stringState) in getSortedAppListItems(dict: appListItems) {
           // filter apps that don't exist
           guard let _ = self.getUrlForApplication(bundleIdentifier) else { continue }
 
@@ -85,8 +87,11 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     }
 
     Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
-      .onChange(of: \.appList) { appList, _, _ in var appStates = [String: String]()
-        for appItem in appList.appListItems {
+      .onChange(of: \.appList.appListItems) { appListItems, state, _ in
+        state.appList.appListItems = getSortedAppListItems(appListItems: state.appList.appListItems)
+
+        var appStates = [String: String]()
+        for appItem in appListItems {
           appStates[appItem.menuBarSaveState.bundleIdentifier] =
             appItem.menuBarSaveState.state.stringValue
         }
@@ -98,6 +103,53 @@ public struct SettingsFeatureReducer: ReducerProtocol {
         }
       }
   }
+
+  func getSortedAppListItems(appListItems: IdentifiedArrayOf<AppListItemReducer.State>)
+    -> IdentifiedArrayOf<AppListItemReducer.State>
+  {
+    var appDisplayNames = [String: String]()
+
+    for item in appListItems {
+      guard let appBundleURL = self.getUrlForApplication(item.menuBarSaveState.bundleIdentifier),
+        let appBundleDisplayName = self.getBundleDisplayName(appBundleURL)
+      else { continue }
+
+      appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appBundleDisplayName
+    }
+
+    return IdentifiedArray(
+      uniqueElements: appListItems.sorted { lhs, rhs in
+        guard let lhsAppDisplayName = appDisplayNames[lhs.menuBarSaveState.bundleIdentifier],
+          let rhsAppDisplayName = appDisplayNames[rhs.menuBarSaveState.bundleIdentifier]
+        else { return true }
+
+        return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
+          == .orderedAscending
+      }
+    )
+  }
+
+  func getSortedAppListItems(dict: [String: String]) -> [(String, String)] {
+    var appDisplayNames = [String: String]()
+
+    for bundleIdentifier in dict.keys {
+      guard let appBundleURL = self.getUrlForApplication(bundleIdentifier),
+        let appBundleDisplayName = self.getBundleDisplayName(appBundleURL)
+      else { continue }
+
+      appDisplayNames[bundleIdentifier] = appBundleDisplayName
+    }
+
+    return dict.sorted { lhs, rhs in
+      guard let lhsAppDisplayName = appDisplayNames[lhs.key],
+        let rhsAppDisplayName = appDisplayNames[rhs.key]
+      else { return true }
+
+      return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
+        == .orderedAscending
+    }
+  }
+
 }
 
 public enum SettingsFeatureEnvironmentKey: DependencyKey {

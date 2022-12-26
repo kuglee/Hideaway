@@ -12,6 +12,7 @@ import XCTest
     let (settingsWindowDidBecomeMainFinished, _) = AsyncStream<Void>.streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
+    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -37,10 +38,15 @@ import XCTest
     store.dependencies.notifications.settingsWindowDidBecomeMain = {
       AsyncStream(settingsWindowDidBecomeMainFinished.map { _ in })
     }
-    store.dependencies.menuBarSettingsManager.getUrlForApplication = { _ in
+    store.dependencies.menuBarSettingsManager.getUrlForApplication = {
       didGetUrlForApplication = true
 
-      return URL.init(filePath: "")
+      return URL.init(filePath: $0)
+    }
+    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
+      didGetBundleDisplayName = true
+
+      return $0.absoluteString
     }
 
     let task = await store.send(.task)
@@ -63,6 +69,7 @@ import XCTest
     }
 
     XCTAssertTrue(didGetUrlForApplication)
+    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 
@@ -120,6 +127,7 @@ import XCTest
       .streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
+    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -145,10 +153,15 @@ import XCTest
     store.dependencies.notifications.settingsWindowDidBecomeMain = {
       AsyncStream(settingsWindowDidBecomeMainFinished.map { _ in })
     }
-    store.dependencies.menuBarSettingsManager.getUrlForApplication = { _ in
+    store.dependencies.menuBarSettingsManager.getUrlForApplication = {
       didGetUrlForApplication = true
 
-      return URL.init(filePath: "")
+      return URL.init(filePath: $0)
+    }
+    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
+      didGetBundleDisplayName = true
+
+      return $0.absoluteString
     }
 
     let task = await store.send(.task)
@@ -175,17 +188,18 @@ import XCTest
         appListItems: .init(uniqueElements: [
           .init(
             menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
           ),
           .init(
             menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
           ),
         ])
       )
     }
 
     XCTAssertTrue(didGetUrlForApplication)
+    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 

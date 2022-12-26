@@ -36,6 +36,7 @@ public struct MenuBarSettingsManager {
   public var getDidRunBefore: () -> Bool
   public var setDidRunBefore: (Bool) async -> Void
   public var getUrlForApplication: (String) -> URL?
+  public var getBundleDisplayName: (URL) -> String?
 }
 
 extension MenuBarSettingsManager {
@@ -130,7 +131,8 @@ extension MenuBarSettingsManager {
       },
       getUrlForApplication: { bundleIdentifier in
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
-      }
+      },
+      getBundleDisplayName: { url in Bundle.init(url: url)?.displayName }
     )
   }
 }
@@ -154,6 +156,23 @@ extension MenuBarSettingsManager {
     setAppMenuBarStates: XCTUnimplemented("\(Self.self).setAppMenuBarStates"),
     getDidRunBefore: XCTUnimplemented("\(Self.self).getDidRunBefore", placeholder: false),
     setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore"),
-    getUrlForApplication: XCTUnimplemented("\(Self.self).getUrlForApplication")
+    getUrlForApplication: XCTUnimplemented("\(Self.self).getUrlForApplication", placeholder: nil),
+    getBundleDisplayName: XCTUnimplemented("\(Self.self).getBundleDisplayName", placeholder: "")
   )
+}
+
+extension Bundle {
+  var displayName: String {
+    let bundleName =
+      (self.localizedInfoDictionary?["CFBundleDisplayName"]
+        ?? self.localizedInfoDictionary?["CFBundleName"]
+        ?? self.infoDictionary?["CFBundleDisplayName"] ?? self.infoDictionary?["CFBundleName"])
+      as? String
+
+    if let bundleName { return bundleName }
+
+    let fileName = self.bundleURL.lastPathComponent
+
+    return String(fileName.prefix(upTo: fileName.lastIndex { $0 == "." } ?? fileName.endIndex))
+  }
 }

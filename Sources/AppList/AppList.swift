@@ -26,31 +26,6 @@ public struct AppListReducer: ReducerProtocol {
       self.selectedItemIDs = selectedItemIDs
       self.isFileImporterPresented = isFileImporterPresented
     }
-
-    var sortedAppListItems: IdentifiedArrayOf<AppListItemReducer.State> {
-      var appDisplayNames = [String: String]()
-
-      for item in self.appListItems {
-        guard
-          let appBundleURL = NSWorkspace.shared.urlForApplication(
-            withBundleIdentifier: item.menuBarSaveState.bundleIdentifier
-          ), let appBundle = Bundle.init(url: appBundleURL)
-        else { continue }
-
-        appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appBundle.displayName
-      }
-
-      return IdentifiedArray(
-        uniqueElements: self.appListItems.sorted { lhs, rhs in
-          guard let lhsAppDisplayName = appDisplayNames[lhs.menuBarSaveState.bundleIdentifier],
-            let rhsAppDisplayName = appDisplayNames[rhs.menuBarSaveState.bundleIdentifier]
-          else { return true }
-
-          return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
-            == .orderedAscending
-        }
-      )
-    }
   }
 
   public enum Action: Equatable, BindableAction {
@@ -130,10 +105,7 @@ public struct AppListView: View {
         ZStack {
           List(selection: viewStore.binding(\.$selectedItemIDs)) {
             ForEachStore(
-              self.store.scope(
-                state: \.sortedAppListItems,
-                action: { .appListItem(id: $0, action: $1) }
-              )
+              self.store.scope(state: \.appListItems, action: { .appListItem(id: $0, action: $1) })
             ) {
               AppListItemView(store: $0).listRowSeparator(.visible)
                 .listRowInsets(self.listRowInsets)

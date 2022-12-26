@@ -62,7 +62,7 @@ func getAppName(bundleIdentifier: String) -> String {
 }
 
 extension Bundle {
-  public var displayName: String {
+  var displayName: String {
     let bundleName =
       (self.localizedInfoDictionary?["CFBundleDisplayName"]
         ?? self.localizedInfoDictionary?["CFBundleName"]
