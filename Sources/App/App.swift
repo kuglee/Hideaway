@@ -1,5 +1,6 @@
 import AppFeature
 import ComposableArchitecture
+import ComposableArchitectureExtra
 import MenuBarSettingsManager
 import MenuBarState
 import Notifications
