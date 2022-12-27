@@ -1,22 +1,39 @@
 import AppMenuBarSaveState
 import ComposableArchitecture
+import MenuBarSettingsManager
 import MenuBarState
 import SwiftUI
 
 public struct AppListItemReducer: ReducerProtocol {
+  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
+  @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
+  @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
+
   public init() {}
 
   public struct State: Equatable, Identifiable, Hashable {
     public var menuBarSaveState: AppMenuBarSaveState
     public let id: UUID
+    public var appIcon: NSImage?
+    public var appName: String?
 
-    public init(menuBarSaveState: AppMenuBarSaveState, id: UUID) {
+    public init(
+      menuBarSaveState: AppMenuBarSaveState,
+      id: UUID,
+      appIcon: NSImage? = nil,
+      appName: String? = nil
+    ) {
       self.menuBarSaveState = menuBarSaveState
       self.id = id
+      self.appIcon = appIcon
+      self.appName = appName
     }
   }
 
-  public enum Action: Equatable { case menuBarStateSelected(state: MenuBarState) }
+  public enum Action: Equatable {
+    case menuBarStateSelected(state: MenuBarState)
+    case onAppear
+  }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
@@ -25,8 +42,28 @@ public struct AppListItemReducer: ReducerProtocol {
         state.menuBarSaveState.state = menuBarState
 
         return .none
+      case .onAppear:
+        if let appBundleURL = self.getUrlForApplication(state.menuBarSaveState.bundleIdentifier) {
+          if let appIcon = self.getBundleIcon(appBundleURL) { state.appIcon = appIcon }
+
+          if let appName = self.getBundleDisplayName(appBundleURL) { state.appName = appName }
+        }
+
+        return .none
       }
     }
+  }
+}
+
+enum MenuBarSettingsManagerKey: DependencyKey {
+  static let liveValue = MenuBarSettingsManager.live
+  static let testValue = MenuBarSettingsManager.unimplemented
+}
+
+extension DependencyValues {
+  var menuBarSettingsManager: MenuBarSettingsManager {
+    get { self[MenuBarSettingsManagerKey.self] }
+    set { self[MenuBarSettingsManagerKey.self] = newValue }
   }
 }
 
@@ -38,8 +75,10 @@ public struct AppListItemView: View {
   public var body: some View {
     WithViewStore(store) { viewStore in
       HStack {
-        Image(nsImage: getAppIcon(bundleIdentifier: viewStore.menuBarSaveState.bundleIdentifier))
-        Text("\(getAppName(bundleIdentifier: viewStore.menuBarSaveState.bundleIdentifier))")
+        (viewStore.appIcon != nil
+          ? Image(nsImage: viewStore.appIcon!) : Image(systemName: "questionmark.app"))
+          .resizable().frame(width: 32, height: 32)
+        Text("\(viewStore.appName ?? "N/A")")
         Spacer()
         Picker(
           selection: viewStore.binding(
@@ -50,38 +89,9 @@ public struct AppListItemView: View {
         ) { ForEach(MenuBarState.allCases, id: \.self) { Text($0.label) } }
         .labelsHidden().fixedSize().padding(.trailing, 1)  // bug: List cuts off the trailing edge
       }
+      .onAppear { viewStore.send(.onAppear) }
     }
   }
-}
-
-func getAppName(bundleIdentifier: String) -> String {
-  guard let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
-  else { return "N/A" }
-
-  return Bundle.init(url: bundleURL)!.displayName
-}
-
-extension Bundle {
-  var displayName: String {
-    let bundleName =
-      (self.localizedInfoDictionary?["CFBundleDisplayName"]
-        ?? self.localizedInfoDictionary?["CFBundleName"]
-        ?? self.infoDictionary?["CFBundleDisplayName"] ?? self.infoDictionary?["CFBundleName"])
-      as? String
-
-    if let bundleName { return bundleName }
-
-    let fileName = self.bundleURL.lastPathComponent
-
-    return String(fileName.prefix(upTo: fileName.lastIndex { $0 == "." } ?? fileName.endIndex))
-  }
-}
-
-func getAppIcon(bundleIdentifier: String) -> NSImage {
-  guard let bundleURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
-  else { return NSImage() }
-
-  return NSWorkspace.shared.icon(forFile: bundleURL.relativePath)
 }
 
 public struct AppListItem_Previews: PreviewProvider {

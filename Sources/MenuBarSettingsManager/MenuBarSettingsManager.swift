@@ -37,6 +37,7 @@ public struct MenuBarSettingsManager {
   public var setDidRunBefore: (Bool) async -> Void
   public var getUrlForApplication: (String) -> URL?
   public var getBundleDisplayName: (URL) -> String?
+  public var getBundleIcon: (URL) -> NSImage?
 }
 
 extension MenuBarSettingsManager {
@@ -132,7 +133,11 @@ extension MenuBarSettingsManager {
       getUrlForApplication: { bundleIdentifier in
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
       },
-      getBundleDisplayName: { url in Bundle.init(url: url)?.displayName }
+      getBundleDisplayName: { url in Bundle.init(url: url)?.displayName },
+      getBundleIcon: { url in let image = NSWorkspace.shared.icon(forFile: url.relativePath)
+
+        return image.isValid ? image : nil
+      }
     )
   }
 }
@@ -157,7 +162,8 @@ extension MenuBarSettingsManager {
     getDidRunBefore: XCTUnimplemented("\(Self.self).getDidRunBefore", placeholder: false),
     setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore"),
     getUrlForApplication: XCTUnimplemented("\(Self.self).getUrlForApplication", placeholder: nil),
-    getBundleDisplayName: XCTUnimplemented("\(Self.self).getBundleDisplayName", placeholder: "")
+    getBundleDisplayName: XCTUnimplemented("\(Self.self).getBundleDisplayName", placeholder: ""),
+    getBundleIcon: XCTUnimplemented("\(Self.self).getBundleIcon", placeholder: nil)
   )
 }
 

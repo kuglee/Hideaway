@@ -68,6 +68,7 @@ let package = Package(
       dependencies: [
         "AppMenuBarSaveState",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "MenuBarSettingsManager",
         "MenuBarState",
       ]
     ),
