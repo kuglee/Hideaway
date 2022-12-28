@@ -460,6 +460,9 @@ import XCTest
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
+    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
+      ["com.example.App1": MenuBarState.never.stringValue]
+    }
 
     let task = await store.send(.task)
 
@@ -517,6 +520,9 @@ import XCTest
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getSystemMenuBarState = { .never }
+    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
+      ["com.example.App1": MenuBarState.never.stringValue]
+    }
 
     let task = await store.send(.task)
 

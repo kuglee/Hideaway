@@ -107,12 +107,12 @@ public struct AppFeatureReducer: ReducerProtocol {
           }
         }
       case .fullScreenMenuBarVisibilityChangedNotification:
-        return .run { send in
-          let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
-          let menuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
-            bundleIdentifier
-          )
-          await send(.gotAppMenuBarState(menuBarState))
+        return .run { [state] send in
+          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
+            state.appMenuBarState != savedMenuBarState
+          {
+            await send(.gotAppMenuBarState(savedMenuBarState))
+          }
 
           let systemMenuBarState = await self.menuBarSettingsManager.getSystemMenuBarState()
           await send(.gotSystemMenuBarState(systemMenuBarState))
@@ -120,12 +120,12 @@ public struct AppFeatureReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       case .menuBarHidingChangedNotification:
-        return .run { send in
-          let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
-          let menuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
-            bundleIdentifier
-          )
-          await send(.gotAppMenuBarState(menuBarState))
+        return .run { [state] send in
+          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
+            state.appMenuBarState != savedMenuBarState
+          {
+            await send(.gotAppMenuBarState(savedMenuBarState))
+          }
 
           let systemMenuBarState = await self.menuBarSettingsManager.getSystemMenuBarState()
           await send(.gotSystemMenuBarState(systemMenuBarState))
