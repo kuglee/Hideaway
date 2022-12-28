@@ -3,11 +3,16 @@ import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
+import Notifications
 import SwiftUI
 import XCTestDynamicOverlay
 
 public struct AppListReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
+  @Dependency(\.notifications.postFullScreenMenuBarVisibilityChanged)
+  var postFullScreenMenuBarVisibilityChanged
+  @Dependency(\.notifications.postMenuBarHidingChanged) var postMenuBarHidingChanged
+
   @Dependency(\.uuid) var uuid
 
   public init() {}
@@ -60,13 +65,27 @@ public struct AppListReducer: ReducerProtocol {
       case .appListItem(id: _, action: _): return .none
       case .binding(_): return .none
       case .removeButtonPressed:
-        if !state.selectedItemIDs.isEmpty {
-          for id in state.selectedItemIDs { state.appListItems.remove(id: id) }
-        }
+        let previousAppListItems = state.appListItems
+        let previousSelectedItemIDs = state.selectedItemIDs
 
+        for id in state.selectedItemIDs { state.appListItems.remove(id: id) }
         state.selectedItemIDs = []
 
-        return .none
+        return .run { [previousAppListItems, previousSelectedItemIDs] send in
+          guard !previousSelectedItemIDs.isEmpty else { return }
+
+          for selectedItemID in previousSelectedItemIDs {
+            let selectedItem = previousAppListItems[id: selectedItemID]!
+            try await self.menuBarSettingsManager.setAppMenuBarState(
+              .systemDefault,
+              selectedItem.menuBarSaveState.bundleIdentifier
+            )
+          }
+
+          await self.postFullScreenMenuBarVisibilityChanged()
+          await self.postMenuBarHidingChanged()
+
+        }
       }
     }
     .forEach(\State.appListItems, action: /Action.appListItem(id:action:)) { AppListItemReducer() }
@@ -82,6 +101,18 @@ extension DependencyValues {
   var menuBarSettingsManager: MenuBarSettingsManager {
     get { self[MenuBarSettingsManagerKey.self] }
     set { self[MenuBarSettingsManagerKey.self] = newValue }
+  }
+}
+
+public enum NotificationsManagerKey: DependencyKey {
+  public static let liveValue = Notifications.live
+  public static let testValue = Notifications.unimplemented
+}
+
+extension DependencyValues {
+  public var notifications: Notifications {
+    get { self[NotificationsManagerKey.self] }
+    set { self[NotificationsManagerKey.self] = newValue }
   }
 }
 

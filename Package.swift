@@ -61,6 +61,7 @@ let package = Package(
         "AppListItem",
         "AppMenuBarSaveState",
         "MenuBarSettingsManager",
+        "Notifications",
       ]
     ),
     .target(
