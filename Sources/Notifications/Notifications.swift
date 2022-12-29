@@ -10,7 +10,7 @@ public struct Notifications {
   public var fullScreenMenuBarVisibilityChanged: @Sendable () async -> AsyncStream<Void>
   public var menuBarHidingChanged: @Sendable () async -> AsyncStream<Void>
   public var appMenuBarStateChanged: @Sendable () async -> AsyncStream<Void>
-  public var didActivateApplication: @Sendable () async -> AsyncStream<Void>
+  public var didActivateApplication: @Sendable () async -> AsyncStream<String?>
   public var didTerminateApplication: @Sendable () async -> AsyncStream<String?>
   public var settingsWindowWillClose: @Sendable () async -> AsyncStream<Void>
   public var settingsWindowDidBecomeMain: @Sendable () async -> AsyncStream<Void>
@@ -63,7 +63,12 @@ extension Notifications {
     didActivateApplication: {
       AsyncStream {
         NSWorkspace.shared.notificationCenter
-          .notifications(named: NSWorkspace.didActivateApplicationNotification).map { _ in }
+          .notifications(named: NSWorkspace.didActivateApplicationNotification)
+          .map {
+            let app = $0.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+
+            return app?.bundleIdentifier
+          }
       }
     },
     didTerminateApplication: {

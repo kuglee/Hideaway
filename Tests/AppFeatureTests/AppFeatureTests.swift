@@ -540,7 +540,6 @@ import XCTest
   }
 
   func testDidActivateApplicationStateDoesNotEqualSavedState() async {
-    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
@@ -549,13 +548,8 @@ import XCTest
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      await didGetBundleIdentifierOfCurrentApp.setValue(true)
-
-      return "com.example.App1"
-    }
     store.dependencies.notifications.didActivateApplication = {
-      AsyncStream(didActivateApplication.map { _ in })
+      AsyncStream(didActivateApplication.map { _ in "com.example.App1" })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
     store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
@@ -578,12 +572,11 @@ import XCTest
 
     activateApplication.yield()
 
-    await store.receive(.didActivateApplication)
+    await store.receive(.didActivateApplication(bundleIdentifier: "com.example.App1"))
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
 
     await task.cancel()
 
-    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
@@ -592,19 +585,12 @@ import XCTest
   }
 
   func testDidActivateApplicationStateEqualsSavedStateButDoesNotEqualAppMenuBarState() async {
-    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
-
     let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      await didGetBundleIdentifierOfCurrentApp.setValue(true)
-
-      return "com.example.App1"
-    }
     store.dependencies.notifications.didActivateApplication = {
-      AsyncStream(didActivateApplication.map { _ in })
+      AsyncStream(didActivateApplication.map { _ in "com.example.App1" })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -618,19 +604,15 @@ import XCTest
 
     activateApplication.yield()
 
-    await store.receive(.didActivateApplication)
+    await store.receive(.didActivateApplication(bundleIdentifier: "com.example.App1"))
     await store.receive(.gotAppMenuBarState(.never)) { $0.appMenuBarState = .never }
 
     await task.cancel()
-
-    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
     activateApplication.yield()
   }
 
   func testDidActivateApplicationStateEqualsSavedStateAndAppMenuBarState() async {
-    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
-
     let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(
@@ -638,13 +620,8 @@ import XCTest
       reducer: AppFeatureReducer()
     )
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      await didGetBundleIdentifierOfCurrentApp.setValue(true)
-
-      return "com.example.App1"
-    }
     store.dependencies.notifications.didActivateApplication = {
-      AsyncStream(didActivateApplication.map { _ in })
+      AsyncStream(didActivateApplication.map { _ in "com.example.App1" })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .never }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -658,29 +635,20 @@ import XCTest
 
     activateApplication.yield()
 
-    await store.receive(.didActivateApplication)
+    await store.receive(.didActivateApplication(bundleIdentifier: "com.example.App1"))
 
     await task.cancel()
-
-    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
     activateApplication.yield()
   }
 
   func testDidActivateApplicationNoSavedStates() async {
-    let didGetBundleIdentifierOfCurrentApp = ActorIsolated(false)
-
     let (didActivateApplication, activateApplication) = AsyncStream<Void>.streamWithContinuation()
 
     let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.menuBarSettingsManager.getBundleIdentifierOfCurrentApp = {
-      await didGetBundleIdentifierOfCurrentApp.setValue(true)
-
-      return "com.example.App1"
-    }
     store.dependencies.notifications.didActivateApplication = {
-      AsyncStream(didActivateApplication.map { _ in })
+      AsyncStream(didActivateApplication.map { _ in "com.example.App1" })
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarState = { _ in .systemDefault }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = { [:] }
@@ -692,11 +660,9 @@ import XCTest
 
     activateApplication.yield()
 
-    await store.receive(.didActivateApplication)
+    await store.receive(.didActivateApplication(bundleIdentifier: "com.example.App1"))
 
     await task.cancel()
-
-    await didGetBundleIdentifierOfCurrentApp.withValue { XCTAssertTrue($0) }
 
     activateApplication.yield()
   }

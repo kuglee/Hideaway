@@ -34,7 +34,7 @@ public struct AppFeatureReducer: ReducerProtocol {
     case gotSystemMenuBarState(SystemMenuBarState)
     case fullScreenMenuBarVisibilityChangedNotification
     case menuBarHidingChangedNotification
-    case didActivateApplication
+    case didActivateApplication(bundleIdentifier: String)
     case didTerminateApplication(bundleIdentifier: String)
     case viewAppeared
     case task
@@ -108,8 +108,11 @@ public struct AppFeatureReducer: ReducerProtocol {
         }
       case .fullScreenMenuBarVisibilityChangedNotification:
         return .run { [state] send in
-          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
-            state.appMenuBarState != savedMenuBarState
+          if let bundleIdentifier = await self.menuBarSettingsManager
+            .getBundleIdentifierOfCurrentApp(),
+            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+              bundleIdentifier: bundleIdentifier
+            ), state.appMenuBarState != savedMenuBarState
           {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
@@ -121,8 +124,11 @@ public struct AppFeatureReducer: ReducerProtocol {
         }
       case .menuBarHidingChangedNotification:
         return .run { [state] send in
-          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
-            state.appMenuBarState != savedMenuBarState
+          if let bundleIdentifier = await self.menuBarSettingsManager
+            .getBundleIdentifierOfCurrentApp(),
+            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+              bundleIdentifier: bundleIdentifier
+            ), state.appMenuBarState != savedMenuBarState
           {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
@@ -142,11 +148,11 @@ public struct AppFeatureReducer: ReducerProtocol {
         state.systemMenuBarState = menuBarState
 
         return .none
-      case .didActivateApplication:
+      case let .didActivateApplication(bundleIdentifier):
         return .run { [state] send in
-          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
-            state.appMenuBarState != savedMenuBarState
-          {
+          if let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+            bundleIdentifier: bundleIdentifier
+          ), state.appMenuBarState != savedMenuBarState {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
         } catch: { error, _ in
@@ -175,8 +181,11 @@ public struct AppFeatureReducer: ReducerProtocol {
           let systemMenuBarState = await self.menuBarSettingsManager.getSystemMenuBarState()
           await send(.gotSystemMenuBarState(systemMenuBarState))
 
-          if let savedMenuBarState = try await self.setMenuBarStateOfCurrentApplication(),
-            state.appMenuBarState != savedMenuBarState
+          if let bundleIdentifier = await self.menuBarSettingsManager
+            .getBundleIdentifierOfCurrentApp(),
+            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+              bundleIdentifier: bundleIdentifier
+            ), state.appMenuBarState != savedMenuBarState
           {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
@@ -197,8 +206,10 @@ public struct AppFeatureReducer: ReducerProtocol {
               }
             }
             group.addTask {
-              for await _ in await self.notifications.didActivateApplication() {
-                await send(.didActivateApplication)
+              for await bundleIdentifier in await self.notifications.didActivateApplication() {
+                guard let bundleIdentifier else { return }
+
+                await send(.didActivateApplication(bundleIdentifier: bundleIdentifier))
               }
             }
             group.addTask {
@@ -215,8 +226,7 @@ public struct AppFeatureReducer: ReducerProtocol {
     }
   }
 
-  func setMenuBarStateOfCurrentApplication() async throws -> MenuBarState? {
-    let bundleIdentifier = await self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+  func setMenuBarStateOfApplication(bundleIdentifier: String) async throws -> MenuBarState? {
     let currentMenuBarState = try await self.menuBarSettingsManager.getAppMenuBarState(
       bundleIdentifier
     )
@@ -226,7 +236,7 @@ public struct AppFeatureReducer: ReducerProtocol {
     }
 
     let savedMenuBarStateString =
-      appStates[bundleIdentifier ?? ""] ?? MenuBarState.systemDefault.stringValue
+      appStates[bundleIdentifier] ?? MenuBarState.systemDefault.stringValue
     let savedMenuBarState = MenuBarState(string: savedMenuBarStateString)
 
     if savedMenuBarState != currentMenuBarState {
