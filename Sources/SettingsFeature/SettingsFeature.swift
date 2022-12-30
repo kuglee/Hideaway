@@ -177,13 +177,13 @@ extension DependencyValues {
   }
 }
 
-public enum NotificationsManagerKey: DependencyKey {
-  public static let liveValue = Notifications.live
-  public static let testValue = Notifications.unimplemented
+enum NotificationsManagerKey: DependencyKey {
+  static let liveValue = Notifications.live
+  static let testValue = Notifications.unimplemented
 }
 
 extension DependencyValues {
-  public var notifications: Notifications {
+  var notifications: Notifications {
     get { self[NotificationsManagerKey.self] }
     set { self[NotificationsManagerKey.self] = newValue }
   }
