@@ -155,8 +155,8 @@ let package = Package(
     .testTarget(
       name: "SettingsFeatureTests",
       dependencies: [
-        "SettingsFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+        "SettingsFeature",
       ]
     ),
   ]
