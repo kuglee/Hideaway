@@ -89,7 +89,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
 
     Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
       .onChange(of: \.appList.appListItems) { appListItems, state, _ in
-        state.appList.appListItems = getSortedAppListItems(appListItems: state.appList.appListItems)
+        state.appList.appListItems.sort()
 
         var appStates = [String: String]()
         for appItem in appListItems {
@@ -103,31 +103,6 @@ public struct SettingsFeatureReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       }
-  }
-
-  func getSortedAppListItems(appListItems: IdentifiedArrayOf<AppListItemReducer.State>)
-    -> IdentifiedArrayOf<AppListItemReducer.State>
-  {
-    var appDisplayNames = [String: String]()
-
-    for item in appListItems {
-      guard let appBundleURL = self.getUrlForApplication(item.menuBarSaveState.bundleIdentifier),
-        let appBundleDisplayName = self.getBundleDisplayName(appBundleURL)
-      else { continue }
-
-      appDisplayNames[item.menuBarSaveState.bundleIdentifier] = appBundleDisplayName
-    }
-
-    return IdentifiedArray(
-      uniqueElements: appListItems.sorted { lhs, rhs in
-        guard let lhsAppDisplayName = appDisplayNames[lhs.menuBarSaveState.bundleIdentifier],
-          let rhsAppDisplayName = appDisplayNames[rhs.menuBarSaveState.bundleIdentifier]
-        else { return true }
-
-        return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
-          == .orderedAscending
-      }
-    )
   }
 
   func getSortedAppListItems(dict: [String: String]) -> [(String, String)] {

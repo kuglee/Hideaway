@@ -9,12 +9,12 @@ public struct AppListItemReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.isSettableWithoutFullDiskAccess)
-  
+
   var isSettableWithoutFullDiskAccess
 
   public init() {}
 
-  public struct State: Equatable, Identifiable, Hashable {
+  public struct State: Equatable, Identifiable, Hashable, Comparable {
     public var menuBarSaveState: AppMenuBarSaveState
     public let id: UUID
     public var appIcon: NSImage?
@@ -33,6 +33,12 @@ public struct AppListItemReducer: ReducerProtocol {
       self.appIcon = appIcon
       self.appName = appName
       self.doesNeedFullDiskAccess = doesNeedFullDiskAccess
+    }
+
+    public static func < (lhs: AppListItemReducer.State, rhs: AppListItemReducer.State) -> Bool {
+      guard let lhsAppName = lhs.appName, let rhsAppName = rhs.appName else { return true }
+
+      return lhsAppName.localizedCaseInsensitiveCompare(rhsAppName) == .orderedAscending
     }
   }
 
