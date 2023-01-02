@@ -5,10 +5,11 @@ import MenuBarState
 import SwiftUI
 
 public struct AppListItemReducer: ReducerProtocol {
-  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
   @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
+  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.isSettableWithoutFullDiskAccess)
+  
   var isSettableWithoutFullDiskAccess
 
   public init() {}

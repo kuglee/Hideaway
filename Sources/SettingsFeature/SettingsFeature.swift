@@ -11,12 +11,12 @@ import XCTestDynamicOverlay
 import os.log
 
 public struct SettingsFeatureReducer: ReducerProtocol {
-  @Dependency(\.settingsFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.setAppMenuBarStates) var setAppMenuBarStates
-  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
+  @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.notifications) var notifications
+  @Dependency(\.settingsFeatureEnvironment) var environment
   @Dependency(\.uuid) var uuid
 
   public init() {}
@@ -28,15 +28,36 @@ public struct SettingsFeatureReducer: ReducerProtocol {
   }
 
   public enum Action: Equatable {
-    case task
-    case gotAppList([String: String])
     case appList(action: AppListReducer.Action)
+    case gotAppList([String: String])
     case settingsWindowWillClose
+    case task
   }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
+      case .appList(action: _): return .none
+      case let .gotAppList(appListItems):
+        state.appList.appListItems = []
+
+        for (bundleIdentifier, stringState) in getSortedAppListItems(dict: appListItems) {
+          // filter apps that don't exist
+          guard let _ = self.getUrlForApplication(bundleIdentifier) else { continue }
+
+          let appMenuBarSaveState = AppMenuBarSaveState(
+            bundleIdentifier: bundleIdentifier,
+            state: MenuBarState.init(string: stringState)
+          )
+
+          state.appList.appListItems.append(
+            .init(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
+          )
+        }
+
+        return .none
+      case .settingsWindowWillClose:
+        return .run { _ in await self.environment.setAccessoryActivationPolicy() }
       case .task:
         return .run { send in
           await withTaskGroup(of: Void.self) { group in
@@ -63,27 +84,6 @@ public struct SettingsFeatureReducer: ReducerProtocol {
             }
           }
         }
-      case .appList(action: _): return .none
-      case let .gotAppList(appListItems):
-        state.appList.appListItems = []
-
-        for (bundleIdentifier, stringState) in getSortedAppListItems(dict: appListItems) {
-          // filter apps that don't exist
-          guard let _ = self.getUrlForApplication(bundleIdentifier) else { continue }
-
-          let appMenuBarSaveState = AppMenuBarSaveState(
-            bundleIdentifier: bundleIdentifier,
-            state: MenuBarState.init(string: stringState)
-          )
-
-          state.appList.appListItems.append(
-            .init(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
-          )
-        }
-
-        return .none
-      case .settingsWindowWillClose:
-        return .run { _ in await self.environment.setAccessoryActivationPolicy() }
       }
     }
 

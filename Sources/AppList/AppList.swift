@@ -12,7 +12,6 @@ public struct AppListReducer: ReducerProtocol {
   @Dependency(\.notifications.postFullScreenMenuBarVisibilityChanged)
   var postFullScreenMenuBarVisibilityChanged
   @Dependency(\.notifications.postMenuBarHidingChanged) var postMenuBarHidingChanged
-
   @Dependency(\.uuid) var uuid
 
   public init() {}
@@ -36,8 +35,8 @@ public struct AppListReducer: ReducerProtocol {
   public enum Action: Equatable, BindableAction {
     case addButtonPressed
     case appImported(bundleIdentifier: String)
-    case binding(BindingAction<State>)
     case appListItem(id: AppListItemReducer.State.ID, action: AppListItemReducer.Action)
+    case binding(BindingAction<State>)
     case removeButtonPressed
   }
 
