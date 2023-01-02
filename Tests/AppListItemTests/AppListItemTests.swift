@@ -11,7 +11,8 @@ import XCTest
     let store = TestStore(
       initialState: AppListItemReducer.State(
         menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+        appName: "App1"
       ),
       reducer: AppListItemReducer()
     )
@@ -33,7 +34,8 @@ import XCTest
     let store = TestStore(
       initialState: AppListItemReducer.State(
         menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+        appName: "App1"
       ),
       reducer: AppListItemReducer()
     )
@@ -58,7 +60,8 @@ import XCTest
     let store = TestStore(
       initialState: AppListItemReducer.State(
         menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+        appName: "App1"
       ),
       reducer: AppListItemReducer()
     )
@@ -80,7 +83,6 @@ import XCTest
     await store.send(.onAppear) {
       $0.appIcon = appIcon
       $0.appName = "App1"
-      $0.didAppear = true
     }
 
     XCTAssertTrue(gotUrlForApplication)

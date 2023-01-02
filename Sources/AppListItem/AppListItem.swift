@@ -17,31 +17,26 @@ public struct AppListItemReducer: ReducerProtocol {
   public struct State: Equatable, Identifiable, Hashable, Comparable {
     public var menuBarSaveState: AppMenuBarSaveState
     public let id: UUID
+    public var appName: String
     public var appIcon: NSImage?
-    public var appName: String?
     public var doesNeedFullDiskAccess: Bool
-    public var didAppear: Bool
 
     public init(
       menuBarSaveState: AppMenuBarSaveState,
       id: UUID,
+      appName: String,
       appIcon: NSImage? = nil,
-      appName: String? = nil,
-      doesNeedFullDiskAccess: Bool = false,
-      didAppear: Bool = false
+      doesNeedFullDiskAccess: Bool = false
     ) {
       self.menuBarSaveState = menuBarSaveState
       self.id = id
       self.appIcon = appIcon
       self.appName = appName
       self.doesNeedFullDiskAccess = doesNeedFullDiskAccess
-      self.didAppear = didAppear
     }
 
     public static func < (lhs: AppListItemReducer.State, rhs: AppListItemReducer.State) -> Bool {
-      guard let lhsAppName = lhs.appName, let rhsAppName = rhs.appName else { return true }
-
-      return lhsAppName.localizedCaseInsensitiveCompare(rhsAppName) == .orderedAscending
+      lhs.appName.localizedCaseInsensitiveCompare(rhs.appName) == .orderedAscending
     }
   }
 
@@ -65,12 +60,10 @@ public struct AppListItemReducer: ReducerProtocol {
         return .none
       case .onAppear:
         if let appBundleURL = self.getUrlForApplication(state.menuBarSaveState.bundleIdentifier) {
-          if let appIcon = self.getBundleIcon(appBundleURL) { state.appIcon = appIcon }
-
-          if let appName = self.getBundleDisplayName(appBundleURL) { state.appName = appName }
+          if state.appIcon == nil, let appIcon = self.getBundleIcon(appBundleURL) {
+            state.appIcon = appIcon
+          }
         }
-
-        state.didAppear = true
 
         return .none
       }
@@ -101,7 +94,7 @@ public struct AppListItemView: View {
         (viewStore.appIcon != nil
           ? Image(nsImage: viewStore.appIcon!) : Image(systemName: "questionmark.app"))
           .resizable().frame(width: 32, height: 32)
-        Text("\(viewStore.appName ?? "N/A")")
+        Text(viewStore.appName)
         Spacer()
         Picker(
           selection: viewStore.binding(
@@ -123,7 +116,8 @@ public struct AppListItem_Previews: PreviewProvider {
       store: Store(
         initialState: AppListItemReducer.State(
           menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"),
-          id: UUID()
+          id: UUID(),
+          appName: "Safari"
         ),
         reducer: AppListItemReducer()
       )

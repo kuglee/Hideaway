@@ -13,6 +13,7 @@ import XCTest
     let (settingsWindowDidBecomeMainFinished, _) = AsyncStream<Void>.streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
+    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -43,6 +44,11 @@ import XCTest
 
       return URL.init(filePath: $0)
     }
+    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
+      didGetBundleDisplayName = true
+
+      return $0.lastPathComponent
+    }
 
     let task = await store.send(.task)
 
@@ -52,11 +58,13 @@ import XCTest
       var appListItems: IdentifiedArrayOf<AppListItemReducer.State> = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+          appName: "com.example.App1"
         ),
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+          appName: "com.example.App2"
         ),
       ])
 
@@ -66,6 +74,7 @@ import XCTest
     }
 
     XCTAssertTrue(didGetUrlForApplication)
+    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 
@@ -123,6 +132,7 @@ import XCTest
       .streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
+    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -153,6 +163,11 @@ import XCTest
 
       return URL.init(filePath: $0)
     }
+    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
+      didGetBundleDisplayName = true
+
+      return $0.lastPathComponent
+    }
 
     let task = await store.send(.task)
 
@@ -162,11 +177,13 @@ import XCTest
       var appListItems: IdentifiedArrayOf<AppListItemReducer.State> = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+          appName: "com.example.App1"
         ),
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+          appName: "com.example.App2"
         ),
       ])
 
@@ -178,9 +195,42 @@ import XCTest
     await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"]))
 
     XCTAssertTrue(didGetUrlForApplication)
+    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 
     settingsWindowDidBecomeMain.yield()
+  }
+
+  func testAppListItemsChanged() async {
+    let didSetAppMenuBarStates = ActorIsolated(false)
+
+    let store = TestStore(
+      initialState: SettingsFeatureReducer.State(),
+      reducer: SettingsFeatureReducer()
+    )
+
+    store.dependencies.menuBarSettingsManager.setAppMenuBarStates = { _ in
+      await didSetAppMenuBarStates.setValue(true)
+    }
+
+    await store.send(
+      .appListItemsChanged(
+        newValue: .init(uniqueElements: [
+          .init(
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+            appName: "com.example.App1"
+          ),
+          .init(
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            appName: "com.example.App2"
+          ),
+        ])
+      )
+    )
+
+    await didSetAppMenuBarStates.withValue { XCTAssertTrue($0) }
   }
 }

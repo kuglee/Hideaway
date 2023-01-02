@@ -39,15 +39,10 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case .appList(action: _): return .none
-      case .appListItemsChanged:
-        if let lastItemDidAppear = state.appList.appListItems.last?.didAppear,
-          lastItemDidAppear == true
-        {
-          state.appList.appListItems.sort()
-        }
-
+      case let .appListItemsChanged(appListItems):
         var appStates = [String: String]()
-        for appItem in state.appList.appListItems {
+
+        for appItem in appListItems {
           appStates[appItem.menuBarSaveState.bundleIdentifier] =
             appItem.menuBarSaveState.state.stringValue
         }
@@ -75,7 +70,13 @@ public struct SettingsFeatureReducer: ReducerProtocol {
             appListItem.menuBarSaveState = appMenuBarSaveState
             newAppListItems.append(appListItem)
           } else {
-            newAppListItems.append(.init(menuBarSaveState: appMenuBarSaveState, id: self.uuid()))
+            guard let appBundleURL = self.getUrlForApplication(bundleIdentifier),
+              let appName = self.getBundleDisplayName(appBundleURL)
+            else { continue }
+
+            newAppListItems.append(
+              .init(menuBarSaveState: appMenuBarSaveState, id: self.uuid(), appName: appName)
+            )
           }
         }
 
@@ -115,8 +116,8 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     }
 
     Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
-      .onChange(of: \.appList.appListItems) { appListItems, state, action in
-        .run { send in await send(.appListItemsChanged(newValue: appListItems)) }
+      .onChange(of: \.appList.appListItems) { appListItems, _, _ in
+        return .run { send in await send(.appListItemsChanged(newValue: appListItems)) }
       }
   }
 }
@@ -214,16 +215,56 @@ public struct SettingsFeatureView_Previews: PreviewProvider {
         initialState: SettingsFeatureReducer.State(
           appList: AppListReducer.State(
             appListItems: .init(uniqueElements: [
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
-              .init(menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"), id: UUID()),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.Safari"),
+                id: UUID(),
+                appName: "Safari"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.apple.mail"),
+                id: UUID(),
+                appName: "Mail"
+              ),
             ])
           )
         ),
