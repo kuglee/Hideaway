@@ -26,6 +26,7 @@ import XCTestDynamicOverlay
     await store.receive(.openSettingsWindow)
 
     await store.send(.dismissWelcomeSheet) { $0.didRunBefore = true }
+    await store.receive(.didRunBeforeChanged(newValue: true))
 
     await task.finish()
 

@@ -45,6 +45,7 @@ public struct AppReducer: ReducerProtocol {
   public enum Action: Equatable {
     case appFeatureAction(action: AppFeatureReducer.Action)
     case applicationTerminated
+    case didRunBeforeChanged(newValue: Bool)
     case dismissWelcomeSheet
     case dismissFullDiskAccessDialog
     case doesAppListItemNeedFullDiskAccessChanged(newValue: Bool)
@@ -98,6 +99,8 @@ public struct AppReducer: ReducerProtocol {
         }
 
         return .none
+      case let .didRunBeforeChanged(newValue):
+        return .run { send in await self.setDidRunBefore(newValue) }
       case let .doesAppListItemNeedFullDiskAccessChanged(newValue):
         guard newValue else { return .none }
 
@@ -120,7 +123,7 @@ public struct AppReducer: ReducerProtocol {
       }
     }
     .onChange(of: \.didRunBefore) { didRunBefore, _, _ in
-      return .run { send in await self.setDidRunBefore(didRunBefore) }
+      return .run { send in await send(.didRunBeforeChanged(newValue: didRunBefore)) }
     }
 
     Scope(state: \.appFeatureState, action: /Action.appFeatureAction(action:)) {
