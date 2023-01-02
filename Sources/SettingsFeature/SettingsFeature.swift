@@ -29,6 +29,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
 
   public enum Action: Equatable {
     case appList(action: AppListReducer.Action)
+    case appListItemsChanged(newValue: IdentifiedArrayOf<AppListItemReducer.State>)
     case gotAppList([String: String])
     case settingsWindowWillClose
     case task
@@ -38,10 +39,28 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case .appList(action: _): return .none
-      case let .gotAppList(appListItems):
-        state.appList.appListItems = []
+      case .appListItemsChanged:
+        if let lastItemDidAppear = state.appList.appListItems.last?.didAppear,
+          lastItemDidAppear == true
+        {
+          state.appList.appListItems.sort()
+        }
 
-        for (bundleIdentifier, stringState) in getSortedAppListItems(dict: appListItems) {
+        var appStates = [String: String]()
+        for appItem in state.appList.appListItems {
+          appStates[appItem.menuBarSaveState.bundleIdentifier] =
+            appItem.menuBarSaveState.state.stringValue
+        }
+
+        return .run { [appStates] _ in
+          await self.setAppMenuBarStates(appStates)
+        } catch: { error, send in
+          await self.environment.log(error.localizedDescription)
+        }
+      case let .gotAppList(appListItemsDict):
+        var newAppListItems: IdentifiedArrayOf<AppListItemReducer.State> = []
+
+        for (bundleIdentifier, stringState) in appListItemsDict.sorted(by: <) {
           // filter apps that don't exist
           guard let _ = self.getUrlForApplication(bundleIdentifier) else { continue }
 
@@ -50,10 +69,18 @@ public struct SettingsFeatureReducer: ReducerProtocol {
             state: MenuBarState.init(string: stringState)
           )
 
-          state.appList.appListItems.append(
-            .init(menuBarSaveState: appMenuBarSaveState, id: self.uuid())
-          )
+          if var appListItem = state.appList.appListItems
+            .filter({ $0.menuBarSaveState.bundleIdentifier == bundleIdentifier }).first
+          {
+            appListItem.menuBarSaveState = appMenuBarSaveState
+            newAppListItems.append(appListItem)
+          } else {
+            newAppListItems.append(.init(menuBarSaveState: appMenuBarSaveState, id: self.uuid()))
+          }
         }
+
+        state.appList.appListItems = newAppListItems
+        state.appList.appListItems.sort()
 
         return .none
       case .settingsWindowWillClose:
@@ -88,44 +115,10 @@ public struct SettingsFeatureReducer: ReducerProtocol {
     }
 
     Scope(state: \State.appList, action: /Action.appList(action:)) { AppListReducer() }
-      .onChange(of: \.appList.appListItems) { appListItems, state, _ in
-        state.appList.appListItems.sort()
-
-        var appStates = [String: String]()
-        for appItem in appListItems {
-          appStates[appItem.menuBarSaveState.bundleIdentifier] =
-            appItem.menuBarSaveState.state.stringValue
-        }
-
-        return .run { [appStates] _ in
-          await self.setAppMenuBarStates(appStates)
-        } catch: { error, send in
-          await self.environment.log(error.localizedDescription)
-        }
+      .onChange(of: \.appList.appListItems) { appListItems, state, action in
+        .run { send in await send(.appListItemsChanged(newValue: appListItems)) }
       }
   }
-
-  func getSortedAppListItems(dict: [String: String]) -> [(String, String)] {
-    var appDisplayNames = [String: String]()
-
-    for bundleIdentifier in dict.keys {
-      guard let appBundleURL = self.getUrlForApplication(bundleIdentifier),
-        let appBundleDisplayName = self.getBundleDisplayName(appBundleURL)
-      else { continue }
-
-      appDisplayNames[bundleIdentifier] = appBundleDisplayName
-    }
-
-    return dict.sorted { lhs, rhs in
-      guard let lhsAppDisplayName = appDisplayNames[lhs.key],
-        let rhsAppDisplayName = appDisplayNames[rhs.key]
-      else { return true }
-
-      return lhsAppDisplayName.localizedCaseInsensitiveCompare(rhsAppDisplayName)
-        == .orderedAscending
-    }
-  }
-
 }
 
 public enum SettingsFeatureEnvironmentKey: DependencyKey {

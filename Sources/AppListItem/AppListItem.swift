@@ -20,19 +20,22 @@ public struct AppListItemReducer: ReducerProtocol {
     public var appIcon: NSImage?
     public var appName: String?
     public var doesNeedFullDiskAccess: Bool
+    public var didAppear: Bool
 
     public init(
       menuBarSaveState: AppMenuBarSaveState,
       id: UUID,
       appIcon: NSImage? = nil,
       appName: String? = nil,
-      doesNeedFullDiskAccess: Bool = false
+      doesNeedFullDiskAccess: Bool = false,
+      didAppear: Bool = false
     ) {
       self.menuBarSaveState = menuBarSaveState
       self.id = id
       self.appIcon = appIcon
       self.appName = appName
       self.doesNeedFullDiskAccess = doesNeedFullDiskAccess
+      self.didAppear = didAppear
     }
 
     public static func < (lhs: AppListItemReducer.State, rhs: AppListItemReducer.State) -> Bool {
@@ -66,6 +69,8 @@ public struct AppListItemReducer: ReducerProtocol {
 
           if let appName = self.getBundleDisplayName(appBundleURL) { state.appName = appName }
         }
+
+        state.didAppear = true
 
         return .none
       }

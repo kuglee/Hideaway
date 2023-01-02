@@ -1,4 +1,5 @@
 import AppList
+import AppListItem
 import ComposableArchitecture
 import MenuBarState
 import XCTest
@@ -12,7 +13,6 @@ import XCTest
     let (settingsWindowDidBecomeMainFinished, _) = AsyncStream<Void>.streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
-    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -43,33 +43,29 @@ import XCTest
 
       return URL.init(filePath: $0)
     }
-    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
-      didGetBundleDisplayName = true
-
-      return $0.absoluteString
-    }
 
     let task = await store.send(.task)
 
     changeAppMenuBarState.yield()
 
     await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"])) {
-      $0.appList = AppListReducer.State(
-        appListItems: .init(uniqueElements: [
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-          ),
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-          ),
-        ])
-      )
+      var appListItems: IdentifiedArrayOf<AppListItemReducer.State> = .init(uniqueElements: [
+        .init(
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        ),
+        .init(
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        ),
+      ])
+
+      appListItems.sort()
+
+      $0.appList = AppListReducer.State(appListItems: appListItems)
     }
 
     XCTAssertTrue(didGetUrlForApplication)
-    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 
@@ -127,7 +123,6 @@ import XCTest
       .streamWithContinuation()
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
-    var didGetBundleDisplayName = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -158,48 +153,31 @@ import XCTest
 
       return URL.init(filePath: $0)
     }
-    store.dependencies.menuBarSettingsManager.getBundleDisplayName = {
-      didGetBundleDisplayName = true
-
-      return $0.absoluteString
-    }
 
     let task = await store.send(.task)
 
     settingsWindowDidBecomeMain.yield()
 
     await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"])) {
-      $0.appList = AppListReducer.State(
-        appListItems: .init(uniqueElements: [
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-          ),
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-          ),
-        ])
-      )
+      var appListItems: IdentifiedArrayOf<AppListItemReducer.State> = .init(uniqueElements: [
+        .init(
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        ),
+        .init(
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        ),
+      ])
+
+      appListItems.sort()
+
+      $0.appList = AppListReducer.State(appListItems: appListItems)
     }
 
-    await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"])) {
-      $0.appList = AppListReducer.State(
-        appListItems: .init(uniqueElements: [
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
-          ),
-          .init(
-            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
-          ),
-        ])
-      )
-    }
+    await store.receive(.gotAppList(["com.example.App1": "never", "com.example.App2": "always"]))
 
     XCTAssertTrue(didGetUrlForApplication)
-    XCTAssertTrue(didGetBundleDisplayName)
 
     await task.cancel()
 
