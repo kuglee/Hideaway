@@ -8,6 +8,8 @@ public struct AppListItemReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
   @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
+  @Dependency(\.menuBarSettingsManager.isSettableWithoutFullDiskAccess)
+  var isSettableWithoutFullDiskAccess
 
   public init() {}
 
@@ -16,17 +18,20 @@ public struct AppListItemReducer: ReducerProtocol {
     public let id: UUID
     public var appIcon: NSImage?
     public var appName: String?
+    public var doesNeedFullDiskAccess: Bool
 
     public init(
       menuBarSaveState: AppMenuBarSaveState,
       id: UUID,
       appIcon: NSImage? = nil,
-      appName: String? = nil
+      appName: String? = nil,
+      doesNeedFullDiskAccess: Bool = false
     ) {
       self.menuBarSaveState = menuBarSaveState
       self.id = id
       self.appIcon = appIcon
       self.appName = appName
+      self.doesNeedFullDiskAccess = doesNeedFullDiskAccess
     }
   }
 
@@ -39,6 +44,12 @@ public struct AppListItemReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case let .menuBarStateSelected(menuBarState):
+        if !self.isSettableWithoutFullDiskAccess(state.menuBarSaveState.bundleIdentifier) {
+          state.doesNeedFullDiskAccess = true
+
+          return .none
+        }
+
         state.menuBarSaveState.state = menuBarState
 
         return .none

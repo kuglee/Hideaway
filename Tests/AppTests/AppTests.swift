@@ -115,4 +115,36 @@ import XCTestDynamicOverlay
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
     await didTerminate.withValue { XCTAssertTrue($0) }
   }
+
+  func testShouldShowFullDiskAccessDialogWhenChangingFromMenuExtra() async {
+    let didOpenSettings = ActorIsolated(false)
+
+    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+
+    store.dependencies.appEnvironment.openSettings = { await didOpenSettings.setValue(true) }
+
+    let task = await store.send(.doesCurrentAppNeedFullDiskAccessChanged(newValue: true)) {
+      $0.shouldShowFullDiskAccessDialog = true
+    }
+
+    await store.receive(.openSettingsWindow)
+
+    await store.send(.dismissFullDiskAccessDialog) { $0.shouldShowFullDiskAccessDialog = false }
+
+    await task.finish()
+
+    await didOpenSettings.withValue { XCTAssertTrue($0) }
+  }
+
+    func testShouldShowFullDiskAccessDialogWhenChangingFromSettings() async {
+    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+
+    let task = await store.send(.doesAppListItemNeedFullDiskAccessChanged(newValue: true)) {
+      $0.shouldShowFullDiskAccessDialog = true
+    }
+
+    await store.send(.dismissFullDiskAccessDialog) { $0.shouldShowFullDiskAccessDialog = false }
+
+    await task.finish()
+  }
 }

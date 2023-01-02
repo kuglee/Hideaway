@@ -16,13 +16,16 @@ public struct AppFeatureReducer: ReducerProtocol {
   public struct State: Equatable {
     public var appMenuBarState: MenuBarState
     public var systemMenuBarState: SystemMenuBarState
+    public var doesCurrentAppNeedFullDiskAccess: Bool
 
     public init(
       appMenuBarState: MenuBarState = .systemDefault,
-      systemMenuBarState: SystemMenuBarState = .inFullScreenOnly
+      systemMenuBarState: SystemMenuBarState = .inFullScreenOnly,
+      doesCurrentAppNeedFullDiskAccess: Bool = false
     ) {
       self.appMenuBarState = appMenuBarState
       self.systemMenuBarState = systemMenuBarState
+      self.doesCurrentAppNeedFullDiskAccess = doesCurrentAppNeedFullDiskAccess
     }
   }
 
@@ -45,18 +48,22 @@ public struct AppFeatureReducer: ReducerProtocol {
     Reduce { state, action in
       switch action {
       case let .appMenuBarStateSelected(menuBarState):
+        guard let bundleIdentifier = self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+        else { return .none }
+
+        if !self.menuBarSettingsManager.isSettableWithoutFullDiskAccess(bundleIdentifier) {
+          state.doesCurrentAppNeedFullDiskAccess = true
+          
+          return .none
+        }
+
         guard menuBarState != state.appMenuBarState else { return .none }
 
         let oldAppMenuBarState = state.appMenuBarState
 
         state.appMenuBarState = menuBarState
 
-        return .run { [state] send in
-          guard
-            let bundleIdentifier = await self.menuBarSettingsManager
-              .getBundleIdentifierOfCurrentApp()
-          else { return }
-
+        return .run { [state, bundleIdentifier] send in
           try await self.menuBarSettingsManager.setAppMenuBarState(menuBarState, bundleIdentifier)
 
           var appStates: [String: String] =
@@ -107,13 +114,13 @@ public struct AppFeatureReducer: ReducerProtocol {
           }
         }
       case .fullScreenMenuBarVisibilityChangedNotification:
-        return .run { [state] send in
-          if let bundleIdentifier = await self.menuBarSettingsManager
-            .getBundleIdentifierOfCurrentApp(),
-            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
-              bundleIdentifier: bundleIdentifier
-            ), state.appMenuBarState != savedMenuBarState
-          {
+        guard let bundleIdentifier = self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+        else { return .none }
+
+        return .run { [state, bundleIdentifier] send in
+          if let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+            bundleIdentifier: bundleIdentifier
+          ), state.appMenuBarState != savedMenuBarState {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
 
@@ -123,13 +130,13 @@ public struct AppFeatureReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       case .menuBarHidingChangedNotification:
+        guard let bundleIdentifier = self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+        else { return .none }
+
         return .run { [state] send in
-          if let bundleIdentifier = await self.menuBarSettingsManager
-            .getBundleIdentifierOfCurrentApp(),
-            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
-              bundleIdentifier: bundleIdentifier
-            ), state.appMenuBarState != savedMenuBarState
-          {
+          if let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+            bundleIdentifier: bundleIdentifier
+          ), state.appMenuBarState != savedMenuBarState {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
 
@@ -149,6 +156,8 @@ public struct AppFeatureReducer: ReducerProtocol {
 
         return .none
       case let .didActivateApplication(bundleIdentifier):
+        state.doesCurrentAppNeedFullDiskAccess = false
+
         return .run { [state] send in
           if let savedMenuBarState = try await self.setMenuBarStateOfApplication(
             bundleIdentifier: bundleIdentifier
@@ -177,16 +186,16 @@ public struct AppFeatureReducer: ReducerProtocol {
           await self.environment.log(error.localizedDescription)
         }
       case .viewAppeared:
+        guard let bundleIdentifier = self.menuBarSettingsManager.getBundleIdentifierOfCurrentApp()
+        else { return .none }
+
         return .run { [state] send in
           let systemMenuBarState = await self.menuBarSettingsManager.getSystemMenuBarState()
           await send(.gotSystemMenuBarState(systemMenuBarState))
 
-          if let bundleIdentifier = await self.menuBarSettingsManager
-            .getBundleIdentifierOfCurrentApp(),
-            let savedMenuBarState = try await self.setMenuBarStateOfApplication(
-              bundleIdentifier: bundleIdentifier
-            ), state.appMenuBarState != savedMenuBarState
-          {
+          if let savedMenuBarState = try await self.setMenuBarStateOfApplication(
+            bundleIdentifier: bundleIdentifier
+          ), state.appMenuBarState != savedMenuBarState {
             await send(.gotAppMenuBarState(savedMenuBarState))
           }
         } catch: { error, _ in

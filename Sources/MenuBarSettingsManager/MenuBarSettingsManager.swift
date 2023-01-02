@@ -30,7 +30,7 @@ public struct MenuBarSettingsManager {
   public var setAppMenuBarState: (MenuBarState, String?) async throws -> Void
   public var getSystemMenuBarState: () async -> SystemMenuBarState
   public var setSystemMenuBarState: (SystemMenuBarState) async -> Void
-  public var getBundleIdentifierOfCurrentApp: () async -> String?
+  public var getBundleIdentifierOfCurrentApp: () -> String?
   public var getAppMenuBarStates: () async -> [String: String]?
   public var setAppMenuBarStates: ([String: String]) async -> Void
   public var getDidRunBefore: () -> Bool
@@ -38,6 +38,7 @@ public struct MenuBarSettingsManager {
   public var getUrlForApplication: (String) -> URL?
   public var getBundleDisplayName: (URL) -> String?
   public var getBundleIcon: (URL) -> NSImage?
+  public var isSettableWithoutFullDiskAccess: (String) -> Bool
 }
 
 extension MenuBarSettingsManager {
@@ -137,6 +138,22 @@ extension MenuBarSettingsManager {
       getBundleIcon: { url in let image = NSWorkspace.shared.icon(forFile: url.relativePath)
 
         return image.isValid ? image : nil
+      },
+      isSettableWithoutFullDiskAccess: { bundleIdentifier in
+        guard let plistString = Defaults.getPlistString(bundleIdentifier: bundleIdentifier) else {
+          return false
+        }
+
+        if let dictionary = try? PropertyListDecoder()
+          .decode([String: String].self, from: plistString.data(using: .utf8)!),
+          dictionary.keys.count == 2,
+          dictionary.keys.contains(Defaults.Keys.menuBarVisibleInFullScreenKey.rawValue),
+          dictionary.keys.contains(Defaults.Keys.hideMenuBarOnDesktopKey.rawValue)
+        {
+          return false
+        }
+
+        return true
       }
     )
   }
@@ -163,7 +180,11 @@ extension MenuBarSettingsManager {
     setDidRunBefore: XCTUnimplemented("\(Self.self).setDidRunBefore"),
     getUrlForApplication: XCTUnimplemented("\(Self.self).getUrlForApplication", placeholder: nil),
     getBundleDisplayName: XCTUnimplemented("\(Self.self).getBundleDisplayName", placeholder: ""),
-    getBundleIcon: XCTUnimplemented("\(Self.self).getBundleIcon", placeholder: nil)
+    getBundleIcon: XCTUnimplemented("\(Self.self).getBundleIcon", placeholder: nil),
+    isSettableWithoutFullDiskAccess: XCTUnimplemented(
+      "\(Self.self).isSettableWithoutFullDiskAccess",
+      placeholder: false
+    )
   )
 }
 

@@ -19,6 +19,7 @@ public struct AppReducer: ReducerProtocol {
   @Dependency(\.notifications.postFullScreenMenuBarVisibilityChanged)
   var postFullScreenMenuBarVisibilityChanged
   @Dependency(\.notifications.postMenuBarHidingChanged) var postMenuBarHidingChanged
+  @Dependency(\.workspace.openFullDiskAccessSettings) var openFullDiskAccessSettings
 
   public init() {}
 
@@ -26,15 +27,18 @@ public struct AppReducer: ReducerProtocol {
     public var appFeatureState: AppFeatureReducer.State
     public var settingsFeatureState: SettingsFeatureReducer.State
     public var didRunBefore: Bool
+    public var shouldShowFullDiskAccessDialog: Bool
 
     public init(
       appFeatureState: AppFeatureReducer.State = .init(),
       settingsFeatureState: SettingsFeatureReducer.State = .init(),
-      didRunBefore: Bool = false
+      didRunBefore: Bool = false,
+      shouldShowFullDiskAccessDialog: Bool = false
     ) {
       self.appFeatureState = appFeatureState
       self.settingsFeatureState = settingsFeatureState
       self.didRunBefore = didRunBefore
+      self.shouldShowFullDiskAccessDialog = shouldShowFullDiskAccessDialog
     }
   }
 
@@ -42,8 +46,12 @@ public struct AppReducer: ReducerProtocol {
     case appFeatureAction(action: AppFeatureReducer.Action)
     case applicationTerminated
     case dismissWelcomeSheet
+    case dismissFullDiskAccessDialog
+    case doesAppListItemNeedFullDiskAccessChanged(newValue: Bool)
+    case doesCurrentAppNeedFullDiskAccessChanged(newValue: Bool)
     case onAppear
     case openSettingsWindow
+    case openSystemSettings
     case settingsFeatureAction(action: SettingsFeatureReducer.Action)
   }
 
@@ -78,12 +86,32 @@ public struct AppReducer: ReducerProtocol {
 
           await self.environment.applicationShouldTerminate()
         }
-
       case .onAppear:
         guard !state.didRunBefore else { return .none }
 
         return .run { send in await send(.openSettingsWindow) }
+      case .dismissFullDiskAccessDialog:
+        state.shouldShowFullDiskAccessDialog = false
+
+        for id in state.settingsFeatureState.appList.appListItems.ids {
+          state.settingsFeatureState.appList.appListItems[id: id]?.doesNeedFullDiskAccess = false
+        }
+
+        return .none
+      case let .doesAppListItemNeedFullDiskAccessChanged(newValue):
+        guard newValue else { return .none }
+
+        state.shouldShowFullDiskAccessDialog = true
+
+        return .none
+      case let .doesCurrentAppNeedFullDiskAccessChanged(newValue):
+        guard newValue else { return .none }
+
+        state.shouldShowFullDiskAccessDialog = true
+
+        return .run { send in await send(.openSettingsWindow) }
       case .openSettingsWindow: return .run { _ in await self.environment.openSettings() }
+      case .openSystemSettings: return .run { _ in await self.openFullDiskAccessSettings() }
       case .dismissWelcomeSheet:
         state.didRunBefore = true
 
@@ -98,8 +126,34 @@ public struct AppReducer: ReducerProtocol {
     Scope(state: \.appFeatureState, action: /Action.appFeatureAction(action:)) {
       AppFeatureReducer()
     }
+    .onChange(of: \.appFeatureState.doesCurrentAppNeedFullDiskAccess) {
+      doesCurrentAppNeedFullDiskAccess,
+      _,
+      _ in
+      .run { send in
+        await send(
+          .doesCurrentAppNeedFullDiskAccessChanged(newValue: doesCurrentAppNeedFullDiskAccess)
+        )
+      }
+    }
+
     Scope(state: \.settingsFeatureState, action: /Action.settingsFeatureAction(action:)) {
       SettingsFeatureReducer()
+    }
+    .onChange(of: \.settingsFeatureState.appList.appListItems) { appListItems, _, action in
+      switch action {
+      case .settingsFeatureAction(action: .appList(action: .appListItem(_, .menuBarStateSelected))):
+        let doesAppListItemNeedFullDiskAccess =
+          appListItems.allSatisfy({ appListItem in appListItem.doesNeedFullDiskAccess == false })
+          != true
+
+        return .run { send in
+          await send(
+            .doesAppListItemNeedFullDiskAccessChanged(newValue: doesAppListItemNeedFullDiskAccess)
+          )
+        }
+      default: return .none
+      }
     }
   }
 }
@@ -185,32 +239,51 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
 
   public var body: some Scene {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
-      WithViewStore(self.store.scope(state: \.didRunBefore)) { viewStore in
+      WithViewStore(self.store, observe: { !$0.didRunBefore || $0.shouldShowFullDiskAccessDialog })
+      { viewStore in
         AppFeatureView(
           store: self.store.scope(
             state: \.appFeatureState,
             action: AppReducer.Action.appFeatureAction
           )
         )
-        .disabled(!viewStore.state)
+        .disabled(viewStore.state)
       }
     }
 
     Settings {
-      WithViewStore(self.store.scope(state: { !$0.didRunBefore })) { viewStore in
-        SettingsFeatureView(
-          store: self.store.scope(
-            state: \.settingsFeatureState,
-            action: AppReducer.Action.settingsFeatureAction
+      VStack(spacing: 0) {
+        WithViewStore(self.store, observe: { !$0.didRunBefore }) { viewStore in
+          SettingsFeatureView(
+            store: self.store.scope(
+              state: \.settingsFeatureState,
+              action: AppReducer.Action.settingsFeatureAction
+            )
           )
-        )
-        .frame(minWidth: 550, maxWidth: 550, minHeight: 450, maxHeight: .infinity, alignment: .top)
-        .sheet(isPresented: viewStore.binding(send: .dismissWelcomeSheet)) {
-          WelcomeFeatureView()
-            .background(VisualEffect(material: .windowBackground, blendingMode: .withinWindow))
+          .frame(
+            minWidth: 550,
+            maxWidth: 550,
+            minHeight: 450,
+            maxHeight: .infinity,
+            alignment: .top
+          )
+          .sheet(isPresented: viewStore.binding(send: .dismissWelcomeSheet)) {
+            WelcomeFeatureView()
+              .background(VisualEffect(material: .windowBackground, blendingMode: .withinWindow))
+          }
         }
-        .onAppear { NSWindow.allowsAutomaticWindowTabbing = false }
+        WithViewStore(self.store, observe: \.shouldShowFullDiskAccessDialog) { viewStore in
+          RenderedEmptyView()
+            .confirmationDialog(
+              "Hideaway need Full Disk Access to modify the menu bar settings of the selected application.",
+              isPresented: viewStore.binding(send: .dismissFullDiskAccessDialog)
+            ) {
+              Button("Open Settings") { viewStore.send(.openSystemSettings) }
+              Button("Cancel", role: .cancel) {}
+            }
+        }
       }
+      .onAppear { NSWindow.allowsAutomaticWindowTabbing = false }
     }
     .windowResizability(.contentSize)
     .commands {
@@ -219,6 +292,8 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
     }
   }
 }
+
+struct RenderedEmptyView: View { var body: some View { Spacer().frame(height: 0).hidden() } }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
   var delegate: App!
@@ -230,4 +305,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 protocol ApplicationDelegateProtocol {
   func applicationShouldTerminate() -> NSApplication.TerminateReply
+}
+
+public enum WorkspaceKeys: DependencyKey {
+  public static let liveValue = Workspace.live
+  public static let testValue = Workspace.unimplemented
+}
+
+extension DependencyValues {
+  public var workspace: Workspace {
+    get { self[WorkspaceKeys.self] }
+    set { self[WorkspaceKeys.self] = newValue }
+  }
+}
+
+public struct Workspace { public var openFullDiskAccessSettings: () async -> Void }
+
+extension Workspace {
+  public static let live = Self(openFullDiskAccessSettings: {
+    NSWorkspace.shared.open(
+      URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!
+    )
+  })
+}
+
+extension Workspace {
+  public static let unimplemented = Self(
+    openFullDiskAccessSettings: XCTUnimplemented("\(Self.self).openFullDiskAccessSettings")
+  )
 }

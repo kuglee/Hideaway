@@ -15,8 +15,9 @@ enum DefaultsError: Error, LocalizedError {
   }
 }
 
-// modify defaults using the defaults command because user defaults of system apps can't be
-// modified even with sandboxing turned off
+// modify defaults using the defaults command because user defaults of some system apps can't be
+// modified even with full disk access turned on and sandboxing turned off
+// see the Sandbox Considerations in the docs: https://developer.apple.com/documentation/foundation/userdefaults
 public struct Defaults {
   private static let defaultsExecutable = URL(filePath: "/usr/bin/defaults")
 
@@ -92,6 +93,13 @@ public struct Defaults {
       kCFPreferencesCurrentUser,
       kCFPreferencesAnyHost
     )
+  }
+
+  public static func getPlistString(bundleIdentifier: String) -> String? {
+    guard let plistString = try? run(command: defaultsExecutable, with: ["read", bundleIdentifier])
+    else { return nil }
+
+    return plistString
   }
 }
 
