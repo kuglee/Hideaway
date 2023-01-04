@@ -1,3 +1,3 @@
-import App
+import AppFeature
 
-@main struct MainApp { static func main() { App.main() } }
+@main struct MainApp { static func main() { AppFeature.main() } }

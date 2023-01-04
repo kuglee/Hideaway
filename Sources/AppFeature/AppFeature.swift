@@ -9,8 +9,8 @@ import SwiftUI
 import WelcomeFeature
 import XCTestDynamicOverlay
 
-public struct AppReducer: ReducerProtocol {
-  @Dependency(\.appEnvironment) var environment
+public struct AppFeatureReducer: ReducerProtocol {
+  @Dependency(\.appFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager.getAppMenuBarState) var getAppMenuBarState
   @Dependency(\.menuBarSettingsManager.setAppMenuBarState) var setAppMenuBarState
   @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
@@ -173,24 +173,24 @@ extension DependencyValues {
   }
 }
 
-public enum AppEnvironmentKey: DependencyKey {
-  public static let liveValue = AppEnvironment.live
-  public static let testValue = AppEnvironment.unimplemented
+public enum AppFeatureEnvironmentKey: DependencyKey {
+  public static let liveValue = AppFeatureEnvironment.live
+  public static let testValue = AppFeatureEnvironment.unimplemented
 }
 
 extension DependencyValues {
-  public var appEnvironment: AppEnvironment {
-    get { self[AppEnvironmentKey.self] }
-    set { self[AppEnvironmentKey.self] = newValue }
+  public var appFeatureEnvironment: AppFeatureEnvironment {
+    get { self[AppFeatureEnvironmentKey.self] }
+    set { self[AppFeatureEnvironmentKey.self] = newValue }
   }
 }
 
-public struct AppEnvironment {
+public struct AppFeatureEnvironment {
   public var applicationShouldTerminate: () async -> Void
   public var openSettings: () async -> Void
 }
 
-extension AppEnvironment {
+extension AppFeatureEnvironment {
   public static let live = Self(
     applicationShouldTerminate: {
       await NSApplication.shared.reply(toApplicationShouldTerminate: true)
@@ -213,19 +213,21 @@ extension AppEnvironment {
   )
 }
 
-extension AppEnvironment {
+extension AppFeatureEnvironment {
   public static let unimplemented = Self(
     applicationShouldTerminate: XCTUnimplemented("\(Self.self).applicationShouldTerminate"),
     openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
 
-public struct App: SwiftUI.App, ApplicationDelegateProtocol {
+public struct AppFeature: App, ApplicationDelegateProtocol {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-  let store: StoreOf<AppReducer> = .init(
-    initialState: AppReducer.State(didRunBefore: MenuBarSettingsManager.live.getDidRunBefore()),
-    reducer: AppReducer()
+  let store: StoreOf<AppFeatureReducer> = .init(
+    initialState: AppFeatureReducer.State(
+      didRunBefore: MenuBarSettingsManager.live.getDidRunBefore()
+    ),
+    reducer: AppFeatureReducer()
   )
 
   public init() {
@@ -247,7 +249,7 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
         MenuBarExtraFeatureView(
           store: self.store.scope(
             state: \.menuBarExtraFeatureState,
-            action: AppReducer.Action.menuBarExtraFeatureAction
+            action: AppFeatureReducer.Action.menuBarExtraFeatureAction
           )
         )
         .disabled(viewStore.state)
@@ -260,7 +262,7 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
           SettingsFeatureView(
             store: self.store.scope(
               state: \.settingsFeatureState,
-              action: AppReducer.Action.settingsFeatureAction
+              action: AppFeatureReducer.Action.settingsFeatureAction
             )
           )
           .frame(
@@ -299,7 +301,7 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
 struct RenderedEmptyView: View { var body: some View { Spacer().frame(height: 0).hidden() } }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-  var delegate: App!
+  var delegate: AppFeature!
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     return self.delegate.applicationShouldTerminate()

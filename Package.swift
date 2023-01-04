@@ -6,7 +6,7 @@ let package = Package(
   name: "Hideaway",
   platforms: [.macOS(.v13)],
   products: [
-    .library(name: "App", targets: ["App"]),
+    .library(name: "AppFeature", targets: ["AppFeature"]),
     .library(name: "AppMenuBarSaveState", targets: ["AppMenuBarSaveState"]),
     .library(name: "AppList", targets: ["AppList"]),
     .library(name: "AppListItem", targets: ["AppListItem"]),
@@ -27,7 +27,7 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "App",
+      name: "AppFeature",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "ComposableArchitectureExtra",
@@ -120,9 +120,9 @@ let package = Package(
       dependencies: []
     ),
     .testTarget(
-      name: "AppTests",
+      name: "AppFeatureTests",
       dependencies: [
-        "App",
+        "AppFeature",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "MenuBarState",
         "Notifications",

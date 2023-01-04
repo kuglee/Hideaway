@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		5D03E5D02955AA3800C11004 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5D03E5D22955AA3800C11004 /* Localizable.strings */; };
-		5D22D61B28ACEB3A00AB345E /* App in Frameworks */ = {isa = PBXBuildFile; productRef = 5D22D61A28ACEB3A00AB345E /* App */; };
 		5D935E4E28AC2BD900B7C9C9 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D935E4D28AC2BD900B7C9C9 /* App.swift */; };
 		5D935E5228AC2BDA00B7C9C9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5D935E5128AC2BDA00B7C9C9 /* Assets.xcassets */; };
+		5DB4A63C296602AE00FE04F7 /* AppFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 5DB4A63B296602AE00FE04F7 /* AppFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,7 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5D22D61B28ACEB3A00AB345E /* App in Frameworks */,
+				5DB4A63C296602AE00FE04F7 /* AppFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,7 +126,7 @@
 			);
 			name = Hideaway;
 			packageProductDependencies = (
-				5D22D61A28ACEB3A00AB345E /* App */,
+				5DB4A63B296602AE00FE04F7 /* AppFeature */,
 			);
 			productName = Hideaway;
 			productReference = 5D935E4A28AC2BD900B7C9C9 /* Hideaway.app */;
@@ -480,9 +480,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5D22D61A28ACEB3A00AB345E /* App */ = {
+		5DB4A63B296602AE00FE04F7 /* AppFeature */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = App;
+			productName = AppFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

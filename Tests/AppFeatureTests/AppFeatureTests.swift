@@ -3,11 +3,14 @@ import MenuBarState
 import XCTest
 import XCTestDynamicOverlay
 
-@testable import App
+@testable import AppFeature
 
-@MainActor final class AppTests: XCTestCase {
+@MainActor final class AppFeatureTests: XCTestCase {
   func testOnAppearDidRunBefore() async {
-    let store = TestStore(initialState: AppReducer.State(didRunBefore: true), reducer: AppReducer())
+    let store = TestStore(
+      initialState: AppFeatureReducer.State(didRunBefore: true),
+      reducer: AppFeatureReducer()
+    )
 
     await store.send(.onAppear)
   }
@@ -16,9 +19,9 @@ import XCTestDynamicOverlay
     let didOpenSettings = ActorIsolated(false)
     var didSetDidRunBefore = false
 
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.appEnvironment.openSettings = { await didOpenSettings.setValue(true) }
+    store.dependencies.appFeatureEnvironment.openSettings = { await didOpenSettings.setValue(true) }
     store.dependencies.menuBarSettingsManager.setDidRunBefore = { _ in didSetDidRunBefore = true }
 
     let task = await store.send(.onAppear)
@@ -38,9 +41,9 @@ import XCTestDynamicOverlay
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.appEnvironment.applicationShouldTerminate = {
+    store.dependencies.appFeatureEnvironment.applicationShouldTerminate = {
       await didTerminate.setValue(true)
     }
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
@@ -63,14 +66,14 @@ import XCTestDynamicOverlay
     let didGetAppMenuBarStates = ActorIsolated(false)
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
       await didGetAppMenuBarStates.setValue(true)
 
       return ["com.example.App1": MenuBarState.systemDefault.stringValue]
     }
-    store.dependencies.appEnvironment.applicationShouldTerminate = {
+    store.dependencies.appFeatureEnvironment.applicationShouldTerminate = {
       await didTerminate.setValue(true)
     }
 
@@ -87,7 +90,7 @@ import XCTestDynamicOverlay
     let didPostMenuBarHidingChanged = ActorIsolated(false)
     let didTerminate = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
       await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
@@ -104,7 +107,7 @@ import XCTestDynamicOverlay
 
       return ["com.example.App1": MenuBarState.never.stringValue]
     }
-    store.dependencies.appEnvironment.applicationShouldTerminate = {
+    store.dependencies.appFeatureEnvironment.applicationShouldTerminate = {
       await didTerminate.setValue(true)
     }
 
@@ -120,9 +123,9 @@ import XCTestDynamicOverlay
   func testShouldShowFullDiskAccessDialogWhenChangingFromMenuExtra() async {
     let didOpenSettings = ActorIsolated(false)
 
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
-    store.dependencies.appEnvironment.openSettings = { await didOpenSettings.setValue(true) }
+    store.dependencies.appFeatureEnvironment.openSettings = { await didOpenSettings.setValue(true) }
 
     let task = await store.send(.doesCurrentAppNeedFullDiskAccessChanged(newValue: true)) {
       $0.shouldShowFullDiskAccessDialog = true
@@ -137,8 +140,8 @@ import XCTestDynamicOverlay
     await didOpenSettings.withValue { XCTAssertTrue($0) }
   }
 
-    func testShouldShowFullDiskAccessDialogWhenChangingFromSettings() async {
-    let store = TestStore(initialState: AppReducer.State(), reducer: AppReducer())
+  func testShouldShowFullDiskAccessDialogWhenChangingFromSettings() async {
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
 
     let task = await store.send(.doesAppListItemNeedFullDiskAccessChanged(newValue: true)) {
       $0.shouldShowFullDiskAccessDialog = true
