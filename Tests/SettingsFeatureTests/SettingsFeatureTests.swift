@@ -14,6 +14,7 @@ import XCTest
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
     var didGetBundleDisplayName = false
+    var didGetBundleIcon = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -49,6 +50,9 @@ import XCTest
 
       return $0.lastPathComponent
     }
+    store.dependencies.menuBarSettingsManager.getBundleIcon = { _ in didGetBundleIcon = true
+      return nil
+    }
 
     let task = await store.send(.task)
 
@@ -75,6 +79,7 @@ import XCTest
 
     XCTAssertTrue(didGetUrlForApplication)
     XCTAssertTrue(didGetBundleDisplayName)
+    XCTAssertTrue(didGetBundleIcon)
 
     await task.cancel()
 
@@ -133,6 +138,7 @@ import XCTest
     let didSetAccessoryActivationPolicy = ActorIsolated(false)
     var didGetUrlForApplication = false
     var didGetBundleDisplayName = false
+    var didGetBundleIcon = false
 
     let store = TestStore(
       initialState: SettingsFeatureReducer.State(),
@@ -168,6 +174,9 @@ import XCTest
 
       return $0.lastPathComponent
     }
+    store.dependencies.menuBarSettingsManager.getBundleIcon = { _ in didGetBundleIcon = true
+      return nil
+    }
 
     let task = await store.send(.task)
 
@@ -196,6 +205,7 @@ import XCTest
 
     XCTAssertTrue(didGetUrlForApplication)
     XCTAssertTrue(didGetBundleDisplayName)
+    XCTAssertTrue(didGetBundleIcon)
 
     await task.cancel()
 

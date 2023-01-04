@@ -15,6 +15,7 @@ public struct SettingsFeatureReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.setAppMenuBarStates) var setAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
+  @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
   @Dependency(\.notifications) var notifications
   @Dependency(\.settingsFeatureEnvironment) var environment
   @Dependency(\.uuid) var uuid
@@ -75,7 +76,12 @@ public struct SettingsFeatureReducer: ReducerProtocol {
             else { continue }
 
             newAppListItems.append(
-              .init(menuBarSaveState: appMenuBarSaveState, id: self.uuid(), appName: appName)
+              .init(
+                menuBarSaveState: appMenuBarSaveState,
+                id: self.uuid(),
+                appName: appName,
+                appIcon: self.getBundleIcon(appBundleURL)
+              )
             )
           }
         }

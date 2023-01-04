@@ -40,10 +40,7 @@ public struct AppListItemReducer: ReducerProtocol {
     }
   }
 
-  public enum Action: Equatable {
-    case menuBarStateSelected(state: MenuBarState)
-    case onAppear
-  }
+  public enum Action: Equatable { case menuBarStateSelected(state: MenuBarState) }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
@@ -56,14 +53,6 @@ public struct AppListItemReducer: ReducerProtocol {
         }
 
         state.menuBarSaveState.state = menuBarState
-
-        return .none
-      case .onAppear:
-        if let appBundleURL = self.getUrlForApplication(state.menuBarSaveState.bundleIdentifier) {
-          if state.appIcon == nil, let appIcon = self.getBundleIcon(appBundleURL) {
-            state.appIcon = appIcon
-          }
-        }
 
         return .none
       }
@@ -105,7 +94,6 @@ public struct AppListItemView: View {
         ) { ForEach(MenuBarState.allCases, id: \.self) { Text($0.label) } }
         .labelsHidden().fixedSize().padding(.trailing, 1)  // bug: List cuts off the trailing edge
       }
-      .onAppear { viewStore.send(.onAppear) }
     }
   }
 }

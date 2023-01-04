@@ -15,6 +15,7 @@ import XCTest
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
     var didGetUrlForApplication = false
     var didGetBundleDisplayName = false
+    var didGetBundleIcon = false
 
     let store = TestStore(
       initialState: AppListReducer.State(appListItems: []),
@@ -31,6 +32,9 @@ import XCTest
       didGetBundleDisplayName = true
 
       return $0.lastPathComponent
+    }
+    store.dependencies.menuBarSettingsManager.getBundleIcon = { _ in didGetBundleIcon = true
+      return nil
     }
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
@@ -49,12 +53,14 @@ import XCTest
 
     XCTAssertTrue(didGetUrlForApplication)
     XCTAssertTrue(didGetBundleDisplayName)
+    XCTAssertTrue(didGetBundleIcon)
   }
 
   func testAppImportNotAlreadyImported() async {
     let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
     var didGetUrlForApplication = false
     var didGetBundleDisplayName = false
+    var didGetBundleIcon = false
 
     let store = TestStore(
       initialState: AppListReducer.State(
@@ -80,6 +86,9 @@ import XCTest
 
       return $0.lastPathComponent
     }
+    store.dependencies.menuBarSettingsManager.getBundleIcon = { _ in didGetBundleIcon = true
+      return nil
+    }
 
     let task = await store.send(.addButtonPressed) { $0.isFileImporterPresented = true }
 
@@ -102,6 +111,7 @@ import XCTest
 
     XCTAssertTrue(didGetUrlForApplication)
     XCTAssertTrue(didGetBundleDisplayName)
+    XCTAssertTrue(didGetBundleIcon)
   }
 
   func testAppImportAlreadyImported() async {

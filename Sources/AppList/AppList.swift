@@ -9,6 +9,7 @@ import XCTestDynamicOverlay
 
 public struct AppListReducer: ReducerProtocol {
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
+  @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.setAppMenuBarState) var setAppMenuBarState
   @Dependency(\.notifications.postFullScreenMenuBarVisibilityChanged)
@@ -63,7 +64,8 @@ public struct AppListReducer: ReducerProtocol {
             AppListItemReducer.State(
               menuBarSaveState: AppMenuBarSaveState(bundleIdentifier: bundleIdentifier),
               id: self.uuid(),
-              appName: appName
+              appName: appName,
+              appIcon: self.getBundleIcon(appBundleURL)
             )
           )
 
