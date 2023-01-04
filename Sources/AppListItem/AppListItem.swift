@@ -2,15 +2,22 @@ import AppMenuBarSaveState
 import ComposableArchitecture
 import MenuBarSettingsManager
 import MenuBarState
+import Notifications
 import SwiftUI
+import XCTestDynamicOverlay
+import os.log
 
 public struct AppListItemReducer: ReducerProtocol {
+  @Dependency(\.appListItemEnvironment) var environment
+  @Dependency(\.menuBarSettingsManager.getAppMenuBarStates) var getAppMenuBarStates
+  @Dependency(\.menuBarSettingsManager.setAppMenuBarState) var setAppMenuBarState
+  @Dependency(\.menuBarSettingsManager.setAppMenuBarStates) var setAppMenuBarStates
   @Dependency(\.menuBarSettingsManager.getBundleDisplayName) var getBundleDisplayName
   @Dependency(\.menuBarSettingsManager.getBundleIcon) var getBundleIcon
   @Dependency(\.menuBarSettingsManager.getUrlForApplication) var getUrlForApplication
   @Dependency(\.menuBarSettingsManager.isSettableWithoutFullDiskAccess)
-
   var isSettableWithoutFullDiskAccess
+  @Dependency(\.notifications) var notifications
 
   public init() {}
 
@@ -40,24 +47,106 @@ public struct AppListItemReducer: ReducerProtocol {
     }
   }
 
-  public enum Action: Equatable { case menuBarStateSelected(state: MenuBarState) }
+  public enum Action: Equatable {
+    case menuBarStateSelected(state: MenuBarState)
+    case saveMenuBarStateFailed(oldState: MenuBarState)
+  }
 
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
       case let .menuBarStateSelected(menuBarState):
+        guard menuBarState != state.menuBarSaveState.state else { return .none }
+
         if !self.isSettableWithoutFullDiskAccess(state.menuBarSaveState.bundleIdentifier) {
           state.doesNeedFullDiskAccess = true
 
           return .none
         }
 
+        let oldMenuBarState = state.menuBarSaveState.state
+
         state.menuBarSaveState.state = menuBarState
+
+        return .run { [state, oldMenuBarState] send in
+          var appStates: [String: String] = await self.getAppMenuBarStates() ?? .init()
+
+          appStates[state.menuBarSaveState.bundleIdentifier] =
+            state.menuBarSaveState.state.stringValue
+          await self.setAppMenuBarStates(appStates)
+
+          if await self.environment.getRunningApps()
+            .contains(state.menuBarSaveState.bundleIdentifier)
+          {
+            try await self.setAppMenuBarState(
+              state.menuBarSaveState.state,
+              state.menuBarSaveState.bundleIdentifier
+            )
+
+            if state.menuBarSaveState.state.rawValue.menuBarVisibleInFullScreen
+              != oldMenuBarState.rawValue.menuBarVisibleInFullScreen
+            {
+              await self.notifications.postFullScreenMenuBarVisibilityChanged()
+            }
+
+            if state.menuBarSaveState.state.rawValue.hideMenuBarOnDesktop
+              != oldMenuBarState.rawValue.hideMenuBarOnDesktop
+            {
+              await self.notifications.postMenuBarHidingChanged()
+            }
+          }
+        } catch: { error, send in
+          await send(.saveMenuBarStateFailed(oldState: oldMenuBarState))
+          await self.environment.log(error.localizedDescription)
+        }
+      case let .saveMenuBarStateFailed(oldState):
+        state.menuBarSaveState.state = oldState
 
         return .none
       }
     }
   }
+}
+
+public enum AppListItemEnvironmentKey: DependencyKey {
+  public static let liveValue = AppListItemEnvironment.live
+  public static let testValue = AppListItemEnvironment.unimplemented
+}
+
+extension DependencyValues {
+  public var appListItemEnvironment: AppListItemEnvironment {
+    get { self[AppListItemEnvironmentKey.self] }
+    set { self[AppListItemEnvironmentKey.self] = newValue }
+  }
+}
+
+public struct AppListItemEnvironment {
+  public var getRunningApps: () async -> [String]
+  public var log: (String) async -> Void
+}
+
+extension AppListItemEnvironment {
+  public static let live = Self(
+    getRunningApps: { @MainActor in
+      NSWorkspace.shared.runningApplications.compactMap { app in
+        if app.bundleURL?.absoluteString.contains(".app/") != nil,
+          let bundleIdentifier = app.bundleIdentifier
+        {
+          return bundleIdentifier
+        }
+
+        return nil
+      }
+    },
+    log: { message in os_log("%{public}@", message) }
+  )
+}
+
+extension AppListItemEnvironment {
+  public static let unimplemented = Self(
+    getRunningApps: XCTUnimplemented("\(Self.self).getRunningApps", placeholder: []),
+    log: XCTUnimplemented("\(Self.self).log")
+  )
 }
 
 enum MenuBarSettingsManagerKey: DependencyKey {
@@ -69,6 +158,18 @@ extension DependencyValues {
   var menuBarSettingsManager: MenuBarSettingsManager {
     get { self[MenuBarSettingsManagerKey.self] }
     set { self[MenuBarSettingsManagerKey.self] = newValue }
+  }
+}
+
+enum NotificationsManagerKey: DependencyKey {
+  static let liveValue = Notifications.live
+  static let testValue = Notifications.unimplemented
+}
+
+extension DependencyValues {
+  var notifications: Notifications {
+    get { self[NotificationsManagerKey.self] }
+    set { self[NotificationsManagerKey.self] = newValue }
   }
 }
 
