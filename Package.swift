@@ -29,6 +29,7 @@ let package = Package(
     .target(
       name: "AppFeature",
       dependencies: [
+        "AppListItem",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         "ComposableArchitectureExtra",
         "MenuBarExtraFeature",

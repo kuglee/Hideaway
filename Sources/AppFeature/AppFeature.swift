@@ -1,3 +1,4 @@
+import AppListItem
 import ComposableArchitecture
 import ComposableArchitectureExtra
 import MenuBarExtraFeature
@@ -45,10 +46,10 @@ public struct AppFeatureReducer: ReducerProtocol {
   public enum Action: Equatable {
     case menuBarExtraFeatureAction(action: MenuBarExtraFeatureReducer.Action)
     case applicationTerminated
+    case appListItemChanged(id: UUID)
     case didRunBeforeChanged(newValue: Bool)
     case dismissWelcomeSheet
     case dismissFullDiskAccessDialog
-    case doesAppListItemNeedFullDiskAccessChanged(newValue: Bool)
     case doesCurrentAppNeedFullDiskAccessChanged(newValue: Bool)
     case onAppear
     case openSettingsWindow
@@ -87,6 +88,14 @@ public struct AppFeatureReducer: ReducerProtocol {
 
           await self.environment.applicationShouldTerminate()
         }
+      case let .appListItemChanged(id):
+        guard let appListItem = state.settingsFeatureState.appList.appListItems[id: id] else {
+          return .none
+        }
+
+        if appListItem.doesNeedFullDiskAccess { state.shouldShowFullDiskAccessDialog = true }
+
+        return .none
       case .onAppear:
         guard !state.didRunBefore else { return .none }
 
@@ -95,18 +104,16 @@ public struct AppFeatureReducer: ReducerProtocol {
         state.shouldShowFullDiskAccessDialog = false
 
         for id in state.settingsFeatureState.appList.appListItems.ids {
-          state.settingsFeatureState.appList.appListItems[id: id]?.doesNeedFullDiskAccess = false
+          if let appListItem = state.settingsFeatureState.appList.appListItems[id: id],
+            appListItem.doesNeedFullDiskAccess == true
+          {
+            state.settingsFeatureState.appList.appListItems[id: id]?.doesNeedFullDiskAccess = false
+          }
         }
 
         return .none
       case let .didRunBeforeChanged(newValue):
         return .run { send in await self.setDidRunBefore(newValue) }
-      case let .doesAppListItemNeedFullDiskAccessChanged(newValue):
-        guard newValue else { return .none }
-
-        state.shouldShowFullDiskAccessDialog = true
-
-        return .none
       case let .doesCurrentAppNeedFullDiskAccessChanged(newValue):
         guard newValue else { return .none }
 
@@ -145,16 +152,9 @@ public struct AppFeatureReducer: ReducerProtocol {
     }
     .onChange(of: \.settingsFeatureState.appList.appListItems) { appListItems, _, action in
       switch action {
-      case .settingsFeatureAction(action: .appList(action: .appListItem(_, .menuBarStateSelected))):
-        let doesAppListItemNeedFullDiskAccess =
-          appListItems.allSatisfy({ appListItem in appListItem.doesNeedFullDiskAccess == false })
-          != true
-
-        return .run { send in
-          await send(
-            .doesAppListItemNeedFullDiskAccessChanged(newValue: doesAppListItemNeedFullDiskAccess)
-          )
-        }
+      case let .settingsFeatureAction(
+        action: .appList(action: .appListItem(appListItemId, .menuBarStateSelected))
+      ): return .run { send in await send(.appListItemChanged(id: appListItemId)) }
       default: return .none
       }
     }

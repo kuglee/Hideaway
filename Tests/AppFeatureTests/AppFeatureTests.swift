@@ -141,13 +141,44 @@ import XCTestDynamicOverlay
   }
 
   func testShouldShowFullDiskAccessDialogWhenChangingFromSettings() async {
-    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
+    let store = TestStore(
+      initialState: AppFeatureReducer.State(
+        settingsFeatureState: .init(
+          appList: .init(
+            appListItems: .init(uniqueElements: [
+              .init(
+                menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                appName: "com.example.App1",
+                doesNeedFullDiskAccess: true
+              )
+            ])
+          )
+        )
+      ),
+      reducer: AppFeatureReducer()
+    )
 
-    let task = await store.send(.doesAppListItemNeedFullDiskAccessChanged(newValue: true)) {
-      $0.shouldShowFullDiskAccessDialog = true
+    let task = await store.send(
+      .appListItemChanged(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!)
+    ) { $0.shouldShowFullDiskAccessDialog = true }
+
+    await store.send(.dismissFullDiskAccessDialog) {
+      $0.settingsFeatureState = .init(
+        appList: .init(
+          appListItems: .init(uniqueElements: [
+            .init(
+              menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
+              id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+              appName: "com.example.App1",
+              doesNeedFullDiskAccess: false
+            )
+          ])
+        )
+      )
+
+      $0.shouldShowFullDiskAccessDialog = false
     }
-
-    await store.send(.dismissFullDiskAccessDialog) { $0.shouldShowFullDiskAccessDialog = false }
 
     await task.finish()
   }
