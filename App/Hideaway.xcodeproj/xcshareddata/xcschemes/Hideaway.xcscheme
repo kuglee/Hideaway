@@ -33,9 +33,9 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "AppFeatureTests"
-               BuildableName = "AppFeatureTests"
-               BlueprintName = "AppFeatureTests"
+               BlueprintIdentifier = "MenuBarExtraFeatureTests"
+               BuildableName = "MenuBarExtraFeatureTests"
+               BlueprintName = "MenuBarExtraFeatureTests"
                ReferencedContainer = "container:..">
             </BuildableReference>
          </TestableReference>

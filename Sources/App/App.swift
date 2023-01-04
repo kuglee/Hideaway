@@ -1,6 +1,6 @@
-import AppFeature
 import ComposableArchitecture
 import ComposableArchitectureExtra
+import MenuBarExtraFeature
 import MenuBarSettingsManager
 import MenuBarState
 import Notifications
@@ -24,18 +24,18 @@ public struct AppReducer: ReducerProtocol {
   public init() {}
 
   public struct State: Equatable {
-    public var appFeatureState: AppFeatureReducer.State
+    public var menuBarExtraFeatureState: MenuBarExtraFeatureReducer.State
     public var settingsFeatureState: SettingsFeatureReducer.State
     public var didRunBefore: Bool
     public var shouldShowFullDiskAccessDialog: Bool
 
     public init(
-      appFeatureState: AppFeatureReducer.State = .init(),
+      menuBarExtraFeatureState: MenuBarExtraFeatureReducer.State = .init(),
       settingsFeatureState: SettingsFeatureReducer.State = .init(),
       didRunBefore: Bool = false,
       shouldShowFullDiskAccessDialog: Bool = false
     ) {
-      self.appFeatureState = appFeatureState
+      self.menuBarExtraFeatureState = menuBarExtraFeatureState
       self.settingsFeatureState = settingsFeatureState
       self.didRunBefore = didRunBefore
       self.shouldShowFullDiskAccessDialog = shouldShowFullDiskAccessDialog
@@ -43,7 +43,7 @@ public struct AppReducer: ReducerProtocol {
   }
 
   public enum Action: Equatable {
-    case appFeatureAction(action: AppFeatureReducer.Action)
+    case menuBarExtraFeatureAction(action: MenuBarExtraFeatureReducer.Action)
     case applicationTerminated
     case didRunBeforeChanged(newValue: Bool)
     case dismissWelcomeSheet
@@ -59,7 +59,7 @@ public struct AppReducer: ReducerProtocol {
   public var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
-      case .appFeatureAction(_): return .none
+      case .menuBarExtraFeatureAction(_): return .none
       case .applicationTerminated:
         return .run { _ in
           if let appStates = await self.getAppMenuBarStates() {
@@ -126,10 +126,10 @@ public struct AppReducer: ReducerProtocol {
       return .run { send in await send(.didRunBeforeChanged(newValue: didRunBefore)) }
     }
 
-    Scope(state: \.appFeatureState, action: /Action.appFeatureAction(action:)) {
-      AppFeatureReducer()
+    Scope(state: \.menuBarExtraFeatureState, action: /Action.menuBarExtraFeatureAction(action:)) {
+      MenuBarExtraFeatureReducer()
     }
-    .onChange(of: \.appFeatureState.doesCurrentAppNeedFullDiskAccess) {
+    .onChange(of: \.menuBarExtraFeatureState.doesCurrentAppNeedFullDiskAccess) {
       doesCurrentAppNeedFullDiskAccess,
       _,
       _ in
@@ -244,10 +244,10 @@ public struct App: SwiftUI.App, ApplicationDelegateProtocol {
     MenuBarExtra("Hideaway", systemImage: "menubar.rectangle") {
       WithViewStore(self.store, observe: { !$0.didRunBefore || $0.shouldShowFullDiskAccessDialog })
       { viewStore in
-        AppFeatureView(
+        MenuBarExtraFeatureView(
           store: self.store.scope(
-            state: \.appFeatureState,
-            action: AppReducer.Action.appFeatureAction
+            state: \.menuBarExtraFeatureState,
+            action: AppReducer.Action.menuBarExtraFeatureAction
           )
         )
         .disabled(viewStore.state)

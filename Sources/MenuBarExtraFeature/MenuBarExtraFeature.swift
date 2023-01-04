@@ -6,8 +6,8 @@ import SwiftUI
 import XCTestDynamicOverlay
 import os.log
 
-public struct AppFeatureReducer: ReducerProtocol {
-  @Dependency(\.appFeatureEnvironment) var environment
+public struct MenuBarExtraFeatureReducer: ReducerProtocol {
+  @Dependency(\.menuBarExtraFeatureEnvironment) var environment
   @Dependency(\.menuBarSettingsManager) var menuBarSettingsManager
   @Dependency(\.notifications) var notifications
 
@@ -260,15 +260,15 @@ public struct AppFeatureReducer: ReducerProtocol {
   }
 }
 
-public enum AppFeatureEnvironmentKey: DependencyKey {
-  public static let liveValue = AppFeatureEnvironment.live
-  public static let testValue = AppFeatureEnvironment.unimplemented
+public enum MenuBarExtraFeatureEnvironmentKey: DependencyKey {
+  public static let liveValue = MenuBarExtraFeatureEnvironment.live
+  public static let testValue = MenuBarExtraFeatureEnvironment.unimplemented
 }
 
 extension DependencyValues {
-  public var appFeatureEnvironment: AppFeatureEnvironment {
-    get { self[AppFeatureEnvironmentKey.self] }
-    set { self[AppFeatureEnvironmentKey.self] = newValue }
+  public var menuBarExtraFeatureEnvironment: MenuBarExtraFeatureEnvironment {
+    get { self[MenuBarExtraFeatureEnvironmentKey.self] }
+    set { self[MenuBarExtraFeatureEnvironmentKey.self] = newValue }
   }
 }
 
@@ -296,12 +296,12 @@ extension DependencyValues {
   }
 }
 
-public struct AppFeatureEnvironment {
+public struct MenuBarExtraFeatureEnvironment {
   public var log: (String) async -> Void
   public var openSettings: () async -> Void
 }
 
-extension AppFeatureEnvironment {
+extension MenuBarExtraFeatureEnvironment {
   public static let live = Self(
     log: { message in os_log("%{public}@", message) },
     openSettings: {
@@ -322,21 +322,21 @@ extension AppFeatureEnvironment {
   )
 }
 
-extension AppFeatureEnvironment {
+extension MenuBarExtraFeatureEnvironment {
   public static let unimplemented = Self(
     log: XCTUnimplemented("\(Self.self).log"),
     openSettings: XCTUnimplemented("\(Self.self).openSettings")
   )
 }
 
-public struct AppFeatureView: View {
+public struct MenuBarExtraFeatureView: View {
   // WORKAROUND: onAppear and task are not being called when the view appears
   @MainActor class ForceOnAppear: ObservableObject { init() { Task { objectWillChange.send() } } }
   @StateObject var forceOnAppear = ForceOnAppear()
 
-  let store: StoreOf<AppFeatureReducer>
+  let store: StoreOf<MenuBarExtraFeatureReducer>
 
-  public init(store: StoreOf<AppFeatureReducer>) { self.store = store }
+  public init(store: StoreOf<MenuBarExtraFeatureReducer>) { self.store = store }
 
   public var body: some View {
     WithViewStore(store) { viewStore in
