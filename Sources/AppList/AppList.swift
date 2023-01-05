@@ -85,16 +85,29 @@ public struct AppListReducer: ReducerProtocol {
         return .run { [previousAppListItems, previousSelectedItemIDs] send in
           guard !previousSelectedItemIDs.isEmpty else { return }
 
-          for selectedItemID in previousSelectedItemIDs {
-            let selectedItem = previousAppListItems[id: selectedItemID]!
-            try await self.setAppMenuBarState(
-              .systemDefault,
-              selectedItem.menuBarSaveState.bundleIdentifier
-            )
+          var didSetState = false
+
+          await withThrowingTaskGroup(of: Void.self) { group in
+            for selectedItemID in previousSelectedItemIDs {
+              guard let selectedItem = previousAppListItems[id: selectedItemID],
+                selectedItem.menuBarSaveState.state != .systemDefault
+              else { continue }
+
+              if !didSetState { didSetState = true }
+
+              group.addTask {
+                try await self.setAppMenuBarState(
+                  .systemDefault,
+                  selectedItem.menuBarSaveState.bundleIdentifier
+                )
+              }
+            }
           }
 
-          await self.postFullScreenMenuBarVisibilityChanged()
-          await self.postMenuBarHidingChanged()
+          if didSetState {
+            await self.postFullScreenMenuBarVisibilityChanged()
+            await self.postMenuBarHidingChanged()
+          }
         }
       }
     }

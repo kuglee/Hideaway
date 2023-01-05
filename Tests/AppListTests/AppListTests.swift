@@ -164,12 +164,69 @@ import XCTest
     await task.finish()
   }
 
-  func testRemoveButtonPressedWithMultipleElementsSelected() async {
+  func testRemoveButtonPressedWithMultipleElementsSelectedNotSystemDefault() async {
     let id2 = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
     let id3 = UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
     let didSetAppMenuBarState = ActorIsolated(false)
     let didPostFullScreenMenuBarVisibilityChanged = ActorIsolated(false)
     let didPostMenuBarHidingChanged = ActorIsolated(false)
+
+    let store = TestStore(
+      initialState: AppListReducer.State(
+        appListItems: .init(uniqueElements: [
+          .init(
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            appName: "App1"
+          ),
+          .init(
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App2", state: .always),
+            id: id2,
+            appName: "App2"
+          ),
+          .init(
+            menuBarSaveState: .init(bundleIdentifier: "com.example.App3", state: .inFullScreenOnly),
+            id: id3,
+            appName: "App3"
+          ),
+        ]),
+        selectedItemIDs: [id2, id3]
+      ),
+      reducer: AppListReducer()
+    )
+
+    store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
+      await didSetAppMenuBarState.setValue(true)
+    }
+    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
+      await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
+    }
+    store.dependencies.notifications.postMenuBarHidingChanged = {
+      await didPostMenuBarHidingChanged.setValue(true)
+    }
+
+    let task = await store.send(.removeButtonPressed) {
+      $0.appListItems = .init(uniqueElements: [
+        .init(
+          menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
+          id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+          appName: "App1"
+        )
+      ])
+
+      $0.selectedItemIDs = []
+    }
+
+    await task.finish()
+
+    await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
+    await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
+    await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
+  }
+
+  func testRemoveButtonPressedWithMultipleElementsSelectedSystemDefault() async {
+    let id2 = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+    let id3 = UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
 
     let store = TestStore(
       initialState: AppListReducer.State(
@@ -195,16 +252,6 @@ import XCTest
       reducer: AppListReducer()
     )
 
-    store.dependencies.menuBarSettingsManager.setAppMenuBarState = { _, _ in
-      await didSetAppMenuBarState.setValue(true)
-    }
-    store.dependencies.notifications.postFullScreenMenuBarVisibilityChanged = {
-      await didPostFullScreenMenuBarVisibilityChanged.setValue(true)
-    }
-    store.dependencies.notifications.postMenuBarHidingChanged = {
-      await didPostMenuBarHidingChanged.setValue(true)
-    }
-
     let task = await store.send(.removeButtonPressed) {
       $0.appListItems = .init(uniqueElements: [
         .init(
@@ -218,10 +265,6 @@ import XCTest
     }
 
     await task.finish()
-
-    await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
-    await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
-    await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
   }
 
   func testSelectedItemsBinding() async {
