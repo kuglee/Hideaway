@@ -29,17 +29,20 @@ public struct AppFeatureReducer: ReducerProtocol {
     public var settingsFeatureState: SettingsFeatureReducer.State
     public var didRunBefore: Bool
     public var shouldShowFullDiskAccessDialog: Bool
+    public var shouldTerminate = false
 
     public init(
       menuBarExtraFeatureState: MenuBarExtraFeatureReducer.State = .init(),
       settingsFeatureState: SettingsFeatureReducer.State = .init(),
       didRunBefore: Bool = false,
-      shouldShowFullDiskAccessDialog: Bool = false
+      shouldShowFullDiskAccessDialog: Bool = false,
+      shouldTerminate: Bool = false
     ) {
       self.menuBarExtraFeatureState = menuBarExtraFeatureState
       self.settingsFeatureState = settingsFeatureState
       self.didRunBefore = didRunBefore
       self.shouldShowFullDiskAccessDialog = shouldShowFullDiskAccessDialog
+      self.shouldTerminate = shouldTerminate
     }
   }
 
@@ -47,6 +50,7 @@ public struct AppFeatureReducer: ReducerProtocol {
     case menuBarExtraFeatureAction(action: MenuBarExtraFeatureReducer.Action)
     case applicationTerminated
     case appListItemChanged(id: UUID)
+    case appListRemoveInProgressChanged(newValue: Bool)
     case didRunBeforeChanged(newValue: Bool)
     case dismissWelcomeSheet
     case dismissFullDiskAccessDialog
@@ -62,7 +66,11 @@ public struct AppFeatureReducer: ReducerProtocol {
       switch action {
       case .menuBarExtraFeatureAction(_): return .none
       case .applicationTerminated:
-        return .run { _ in
+        state.shouldTerminate = true
+
+        return .run { [removeInProgress = state.settingsFeatureState.appList.removeInProgress] _ in
+          guard !removeInProgress else { return }
+
           if let appStates = await self.getAppMenuBarStates() {
             var didSetState = false
 
@@ -96,6 +104,10 @@ public struct AppFeatureReducer: ReducerProtocol {
         if appListItem.doesNeedFullDiskAccess { state.shouldShowFullDiskAccessDialog = true }
 
         return .none
+      case let .appListRemoveInProgressChanged(newValue):
+        guard !newValue, state.shouldTerminate else { return .none }
+
+        return .run { send in await send(.applicationTerminated) }
       case .onAppear:
         guard !state.didRunBefore else { return .none }
 
@@ -156,6 +168,10 @@ public struct AppFeatureReducer: ReducerProtocol {
         action: .appList(action: .appListItem(appListItemId, .menuBarStateSelected))
       ): return .run { send in await send(.appListItemChanged(id: appListItemId)) }
       default: return .none
+      }
+    }
+    .onChange(of: \.settingsFeatureState.appList.removeInProgress) { removeInProgress, _, _ in
+      return .run { send in await send(.appListRemoveInProgressChanged(newValue: removeInProgress))
       }
     }
   }

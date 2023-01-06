@@ -56,7 +56,7 @@ import XCTestDynamicOverlay
     store.dependencies.notifications.didActivateApplication = { AsyncStream.never }
     store.dependencies.notifications.didTerminateApplication = { AsyncStream.never }
 
-    await store.send(.applicationTerminated)
+    await store.send(.applicationTerminated) { $0.shouldTerminate = true }
 
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didTerminate.withValue { XCTAssertTrue($0) }
@@ -77,7 +77,7 @@ import XCTestDynamicOverlay
       await didTerminate.setValue(true)
     }
 
-    await store.send(.applicationTerminated)
+    await store.send(.applicationTerminated) { $0.shouldTerminate = true }
 
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didTerminate.withValue { XCTAssertTrue($0) }
@@ -111,12 +111,39 @@ import XCTestDynamicOverlay
       await didTerminate.setValue(true)
     }
 
-    await store.send(.applicationTerminated)
+    await store.send(.applicationTerminated) { $0.shouldTerminate = true }
 
     await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didSetAppMenuBarState.withValue { XCTAssertTrue($0) }
     await didPostFullScreenMenuBarVisibilityChanged.withValue { XCTAssertTrue($0) }
     await didPostMenuBarHidingChanged.withValue { XCTAssertTrue($0) }
+    await didTerminate.withValue { XCTAssertTrue($0) }
+  }
+
+  func testQuitButtonPressedWhileRemoveInProgress() async {
+    let didGetAppMenuBarStates = ActorIsolated(false)
+    let didTerminate = ActorIsolated(false)
+
+    let store = TestStore(initialState: AppFeatureReducer.State(), reducer: AppFeatureReducer())
+
+    store.dependencies.menuBarSettingsManager.getAppMenuBarStates = {
+      await didGetAppMenuBarStates.setValue(true)
+
+      return [:]
+    }
+
+    store.dependencies.appFeatureEnvironment.applicationShouldTerminate = {
+      await didTerminate.setValue(true)
+    }
+
+    let task = await store.send(.appListRemoveInProgressChanged(newValue: true))
+    await store.send(.applicationTerminated) { $0.shouldTerminate = true }
+    await store.send(.appListRemoveInProgressChanged(newValue: false))
+    await store.receive(.applicationTerminated)
+
+    await task.finish()
+
+    await didGetAppMenuBarStates.withValue { XCTAssertTrue($0) }
     await didTerminate.withValue { XCTAssertTrue($0) }
   }
 
