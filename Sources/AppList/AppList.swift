@@ -23,15 +23,18 @@ public struct AppListReducer: ReducerProtocol {
     public var appListItems: IdentifiedArrayOf<AppListItemReducer.State>
     @BindableState public var selectedItemIDs: Set<UUID>
     @BindableState public var isFileImporterPresented: Bool
+    public var removeInProgress: Bool
 
     public init(
       appListItems: IdentifiedArrayOf<AppListItemReducer.State> = [],
       selectedItemIDs: Set<UUID> = [],
-      isFileImporterPresented: Bool = false
+      isFileImporterPresented: Bool = false,
+      removeInProgress: Bool = false
     ) {
       self.appListItems = appListItems
       self.selectedItemIDs = selectedItemIDs
       self.isFileImporterPresented = isFileImporterPresented
+      self.removeInProgress = removeInProgress
     }
   }
 
@@ -40,6 +43,7 @@ public struct AppListReducer: ReducerProtocol {
     case appImported(bundleIdentifier: String)
     case appListItem(id: AppListItemReducer.State.ID, action: AppListItemReducer.Action)
     case binding(BindingAction<State>)
+    case didRemoveAppMenuBarStates(ids: Set<UUID>)
     case removeButtonPressed
   }
 
@@ -75,21 +79,22 @@ public struct AppListReducer: ReducerProtocol {
         return .none
       case .appListItem(id: _, action: _): return .none
       case .binding(_): return .none
-      case .removeButtonPressed:
-        let previousAppListItems = state.appListItems
-        let previousSelectedItemIDs = state.selectedItemIDs
+      case let .didRemoveAppMenuBarStates(ids):
+        for id in ids { state.appListItems.remove(id: id) }
 
-        for id in state.selectedItemIDs { state.appListItems.remove(id: id) }
+        state.removeInProgress = false
         state.selectedItemIDs = []
 
-        return .run { [previousAppListItems, previousSelectedItemIDs] send in
-          guard !previousSelectedItemIDs.isEmpty else { return }
+        return .none
+      case .removeButtonPressed:
+        guard !state.selectedItemIDs.isEmpty else { return .none }
 
-          var didSetState = false
+        state.removeInProgress = true
 
+        return .run { [state] send in var didSetState = false
           await withThrowingTaskGroup(of: Void.self) { group in
-            for selectedItemID in previousSelectedItemIDs {
-              guard let selectedItem = previousAppListItems[id: selectedItemID],
+            for selectedItemID in state.selectedItemIDs {
+              guard let selectedItem = state.appListItems[id: selectedItemID],
                 selectedItem.menuBarSaveState.state != .systemDefault
               else { continue }
 
@@ -108,6 +113,8 @@ public struct AppListReducer: ReducerProtocol {
             await self.postFullScreenMenuBarVisibilityChanged()
             await self.postMenuBarHidingChanged()
           }
+
+          await send(.didRemoveAppMenuBarStates(ids: state.selectedItemIDs))
         }
       }
     }
@@ -145,6 +152,7 @@ public struct AppListView: View {
   private let separatorOpacity = 0.5
   private let listRowInsets = EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0)
   @State private var listItemHeight = 0.0
+  @State private var footerHeight = 0.0
 
   public init(store: StoreOf<AppListReducer>) { self.store = store }
 
@@ -180,6 +188,12 @@ public struct AppListView: View {
           }
           .onDeleteCommand { viewStore.send(.removeButtonPressed) }.scrollDisabled(true)
           .listStyle(.plain).scrollContentBackground(.hidden)
+          if viewStore.removeInProgress {
+            ProgressView().progressViewStyle(.circular)
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+              .offset(.init(width: 0, height: -round(self.footerHeight / 2.0)))
+              .background(Color.primary.opacity(0.1))
+          }
           LazyVStack(spacing: 0, pinnedViews: .sectionFooters) {
             Section(footer: footerView) {
               if !viewStore.appListItems.isEmpty {
@@ -192,6 +206,7 @@ public struct AppListView: View {
             }
           }
         }
+        .disabled(viewStore.removeInProgress)
       }
       .background(Color.init(nsColor: .windowBackgroundColor).opacity(0.4))
       .overlay(
@@ -224,6 +239,12 @@ public struct AppListView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       .background(.ultraThickMaterial).hitTestable()
+      .background {
+        GeometryReader { geometry in
+          Rectangle().foregroundColor(Color.clear)
+            .onAppear { self.footerHeight = geometry.frame(in: .global).size.height }
+        }
+      }
     }
   }
 

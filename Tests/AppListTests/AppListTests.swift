@@ -205,7 +205,10 @@ import XCTest
       await didPostMenuBarHidingChanged.setValue(true)
     }
 
-    let task = await store.send(.removeButtonPressed) {
+    let task = await store.send(.removeButtonPressed) { $0.removeInProgress = true }
+
+    await store.receive(.didRemoveAppMenuBarStates(ids: [id2, id3])) {
+      $0.removeInProgress = false
       $0.appListItems = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1", state: .never),
@@ -252,7 +255,10 @@ import XCTest
       reducer: AppListReducer()
     )
 
-    let task = await store.send(.removeButtonPressed) {
+    let task = await store.send(.removeButtonPressed) { $0.removeInProgress = true }
+
+    await store.receive(.didRemoveAppMenuBarStates(ids: [id2, id3])) {
+      $0.removeInProgress = false
       $0.appListItems = .init(uniqueElements: [
         .init(
           menuBarSaveState: .init(bundleIdentifier: "com.example.App1"),
